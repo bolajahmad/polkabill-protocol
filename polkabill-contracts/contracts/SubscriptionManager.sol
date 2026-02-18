@@ -11,7 +11,7 @@ contract SubscriptionManager is ISubscriptionManager {
     uint256 private nextSubId;
     mapping(uint256 => Subscription) private subscriptions;
 
-    constructor (address _merchant, address _planReg) {
+    constructor(address _merchant, address _planReg) {
         merchantReg = IMerchantRegistry(_merchant);
         planReg = IPlanRegistry(_planReg);
         nextSubId = 1;
@@ -24,8 +24,11 @@ contract SubscriptionManager is ISubscriptionManager {
      *
      * @param _pId The plan ID to subscribe to
      */
-    function subscribe(uint256 _pId, uint256 _start, address subscriber) external returns (uint256 _nextSubId) {
-       // Check that the plan exists
+    function subscribe(
+        uint256 _pId,
+        uint256 _start
+    ) external returns (uint256 _nextSubId) {
+        // Check that the plan exists
         Plan memory plan = planReg.getPlan(_pId);
         if (!plan.active) {
             revert PlanNotActive();
@@ -41,7 +44,7 @@ contract SubscriptionManager is ISubscriptionManager {
         // compose the Subscription
         subscriptions[_nextSubId] = Subscription({
             planId: _pId,
-            subscriber: subscriber,
+            subscriber: msg.sender,
             startTime: _start,
             nextChargeAt: _start + plan.interval,
             billingCycle: 1,
@@ -49,24 +52,30 @@ contract SubscriptionManager is ISubscriptionManager {
         });
         nextSubId += 1;
 
-        emit Subscribed(_nextSubId, subscriber, _pId);
+        emit Subscribed(_nextSubId, msg.sender, _pId);
     }
-
 
     /**
      * Two approaches exist to this
-     * 
+     *
      * It is enough to check that the billing cycle is less that the current billing cycle.
      * When a payment is completed, that is when the billing cycle increases
-     * 
+     *
      * @param _subId The Id of the sub
      * @param _cycle The billing cycle to check
-     * 
+     *
      * @return _paid Whether the payment has happened
      */
-    function confirmPayment(uint256 _subId, uint256 _cycle) external view returns (bool _paid) {
+    function confirmPayment(
+        uint256 _subId,
+        uint256 _cycle
+    ) external view returns (bool _paid) {
         Subscription memory sub = subscriptions[_subId];
-        if (sub.planId == 0 || sub.status == Status.NULL || sub.billingCycle == 0) {
+        if (
+            sub.planId == 0 ||
+            sub.status == Status.NULL ||
+            sub.billingCycle == 0
+        ) {
             revert SubscriptionMissing();
         }
 
@@ -74,9 +83,9 @@ contract SubscriptionManager is ISubscriptionManager {
     }
 
     /**
-     * Charge is allowed if the Subscription exists, 
+     * Charge is allowed if the Subscription exists,
      * If the subscription is within the window (+ grace)
-     * 
+     *
      * @param _subId The subscription ID
      */
     function isChargeAllowed(uint256 _subId) external view returns (bool) {
@@ -85,7 +94,10 @@ contract SubscriptionManager is ISubscriptionManager {
         Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
 
         uint256 grace = plan.grace > 0 ? plan.grace : merchant.grace;
-        if (block.timestamp >= sub.nextChargeAt - merchant.window && block.timestamp <= sub.nextChargeAt + plan.interval + grace) {
+        if (
+            block.timestamp >= sub.nextChargeAt - merchant.window &&
+            block.timestamp <= sub.nextChargeAt + grace
+        ) {
             return true;
         } else {
             return false;
@@ -93,15 +105,33 @@ contract SubscriptionManager is ISubscriptionManager {
     }
 
     /**
-     * Charge is allowed if the Subscription exists, 
+     * Charge is allowed if the Subscription exists,
      * If the subscription is within the window (+ grace)
-     * 
+     *
      * @param _subId The subscription ID
      */
     function isChargeAllowedMut(uint256 _subId) external returns (bool) {
         Subscription memory sub = subscriptions[_subId];
+        if (
+            sub.planId == 0 ||
+            sub.status == Status.NULL ||
+            sub.subscriber == address(0)
+        ) {
+            revert SubscriptionMissing();
+        }
+
+        if (sub.status == Status.CANCELLED) {
+            revert SubscriptionCancelled();
+        }
+
         Plan memory plan = planReg.getPlan(sub.planId);
+        if (!plan.active) {
+            revert PlanNotActive();
+        }
         Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
+        if (!merchant.active) {
+            revert MerchantNotActive();
+        }
 
         uint256 grace = plan.grace > 0 ? plan.grace : merchant.grace;
 
@@ -112,38 +142,69 @@ contract SubscriptionManager is ISubscriptionManager {
         }
         subscriptions[_subId] = sub;
 
-        emit SubscriptionUpdated(_subId, sub.status);
+        emit SubscriptionUpdated(_subId, sub.status, msg.sender);
 
-        uint256 window = sub.nextChargeAt - merchant.window; 
+        uint256 window = sub.nextChargeAt > merchant.window
+            ? sub.nextChargeAt - merchant.window
+            : 0;
 
-        if (block.timestamp >= window && block.timestamp <= sub.nextChargeAt + grace) {
+        if (
+            block.timestamp >= window &&
+            block.timestamp <= sub.nextChargeAt + grace
+        ) {
             return true;
         } else {
             return false;
         }
     }
 
+    function markSubscriptionPaid(uint256 _subId) external {
+        // Ensure Subscription exists
+        Subscription memory sub = subscriptions[_subId];
+        if (sub.billingCycle == 0 || sub.planId == 0) {
+            revert SubscriptionCancelled();
+        }
+        if (sub.status == Status.CANCELLED) {
+            revert SubscriptionCancelled();
+        }
+
+        Plan memory plan = planReg.getPlan(sub.planId);
+
+        // Move the billing cycle forward
+        sub.billingCycle += 1;
+        sub.nextChargeAt += plan.interval;
+        sub.status = Status.ACTIVE;
+
+        subscriptions[_subId] = sub;
+        emit SubscriptionPaid(_subId, sub.billingCycle, sub.nextChargeAt);
+    }
+
     /**
      * A `User` can cancel subscription.
      * msg.sender must equal sub.subscriber
-     * 
+     *
      * @param _subId Subscription ID
      */
     function cancel(uint256 _subId) external {
         Subscription storage sub = subscriptions[_subId];
         if (msg.sender == sub.subscriber) {
-            sub.status = Status.CANCELLED;
-            sub.startTime = 0;
-            sub.billingCycle = 0;
-            sub.nextChargeAt = 0;
+            delete subscriptions[_subId];
         } else {
             revert NotSubscriber();
         }
+
+        emit SubscriptionUpdated(_subId, Status.CANCELLED, msg.sender);
     }
 
-    function getSubscription(uint256 _subId) external view returns (Subscription memory) {
+    function getSubscription(
+        uint256 _subId
+    ) external view returns (Subscription memory) {
         Subscription memory sub = subscriptions[_subId];
-        if (sub.planId == 0 || sub.status == Status.NULL || sub.billingCycle == 0) {
+        if (
+            sub.planId == 0 ||
+            sub.status == Status.NULL ||
+            sub.billingCycle == 0
+        ) {
             revert SubscriptionMissing();
         }
 
