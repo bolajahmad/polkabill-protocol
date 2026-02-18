@@ -9,7 +9,6 @@ contract SubscriptionManager is ISubscriptionManager {
     IMerchantRegistry private merchantReg;
     IPlanRegistry private planReg;
     uint256 private nextSubId;
-
     mapping(uint256 => Subscription) private subscriptions;
 
     constructor (address _merchant, address _planReg) {
@@ -25,19 +24,32 @@ contract SubscriptionManager is ISubscriptionManager {
      *
      * @param _pId The plan ID to subscribe to
      */
-    function subscribe(uint256 _pId, uint256 _start) external returns (uint256 _nextSubId) {
-        _nextSubId = nextSubId;
-
-        // Check that the plan exists
+    function subscribe(uint256 _pId, uint256 _start, address subscriber) external returns (uint256 _nextSubId) {
+       // Check that the plan exists
         Plan memory plan = planReg.getPlan(_pId);
         if (!plan.active) {
             revert PlanNotActive();
         }
 
-        // If plan exists, then do we check if plan.price allowance exist?
-        // User needs to also pass the token and chain to pay on
+        // Merchant must exist too
+        Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
+        if (!merchant.active) {
+            revert MerchantNotActive();
+        }
 
+        _nextSubId = nextSubId;
+        // compose the Subscription
+        subscriptions[_nextSubId] = Subscription({
+            planId: _pId,
+            subscriber: subscriber,
+            startTime: _start,
+            nextChargeAt: _start + plan.interval,
+            billingCycle: 1,
+            status: Status.ACTIVE
+        });
         nextSubId += 1;
+
+        emit Subscribed(_nextSubId, subscriber, _pId);
     }
 
 
@@ -57,6 +69,8 @@ contract SubscriptionManager is ISubscriptionManager {
         if (sub.planId == 0 || sub.status == Status.NULL || sub.billingCycle == 0) {
             revert SubscriptionMissing();
         }
+
+        _paid = sub.billingCycle > _cycle;
     }
 
     /**
