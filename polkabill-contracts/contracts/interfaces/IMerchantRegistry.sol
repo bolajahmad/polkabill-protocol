@@ -19,7 +19,7 @@ struct Merchant {
 event MerchantCreated(address indexed mId, bytes indexed metadata);
 event MerchantStatusUpdated(address indexed mId, bool status);
 event MerchantUpdated(address indexed mid, uint256 _grace, uint256 window, bytes metadata);
-event PayoutAddressSet(address indexed mId, uint32 indexed chainId, address payoutAddr);
+event PayoutAddressSet(address indexed mId, uint256 indexed chainId, address payoutAddr, address old);
 
 error MerchantNotUnique();
 error MissingMerchant();
@@ -32,9 +32,9 @@ interface IMerchantRegistry {
 
     function setMerchantStatus(address mId, bool active) external;
 
-    function setPayoutAddress(address mId, uint32 chainId, address payoutAddress) external;
+    function setPayoutAddress(address mId, uint256 chainId, address payoutAddress) external;
 
     function getMerchant(address mId) external view returns (Merchant memory);
 
-    function getPayoutAddress(address mId, uint32 chainId) external returns (address);
+    function getPayoutAddress(address mId, uint256 chainId) external returns (address);
 }
