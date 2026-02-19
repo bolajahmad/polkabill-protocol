@@ -9,6 +9,8 @@ contract MerchantRegistry is IMerchantRegistry {
     IChainRegistry private immutable chainReg;
     mapping(address => Merchant) private merchants;
     mapping(bytes32 => address) private payoutAddresses;
+    // Encodes the (mid, cid, token) => bool
+    mapping(bytes32 => bool) private tokenAllowed;
 
     ISubscriptionManager public subManager;
 
@@ -51,7 +53,12 @@ contract MerchantRegistry is IMerchantRegistry {
         mId = _owner;
     }
 
-    function updateMerchantConfig(address _mid, uint256 _grace, uint256 _window, bytes calldata _metadata) external {
+    function updateMerchantConfig(
+        address _mid,
+        uint256 _grace,
+        uint256 _window,
+        bytes calldata _metadata
+    ) external {
         if (msg.sender != _mid) {
             revert Unauthorized();
         }
@@ -64,12 +71,21 @@ contract MerchantRegistry is IMerchantRegistry {
 
         merchants[_mid] = Merchant({
             grace: _grace,
-            window: _window == 0 || _window == merchant.window ? merchant.window : _window,
+            window: _window == 0 || _window == merchant.window
+                ? merchant.window
+                : _window,
             active: merchant.active,
             metadata: _metadata
         });
 
-        emit MerchantUpdated(_mid, _grace, _window == 0 || _window == merchant.window ? merchant.window : _window, _metadata);
+        emit MerchantUpdated(
+            _mid,
+            _grace,
+            _window == 0 || _window == merchant.window
+                ? merchant.window
+                : _window,
+            _metadata
+        );
     }
 
     function setMerchantStatus(address _mid, bool active) external {
@@ -77,7 +93,7 @@ contract MerchantRegistry is IMerchantRegistry {
             revert Unauthorized();
         }
         Merchant storage merchant = merchants[_mid];
-        
+
         // Merchant must exist with the ID
         if (merchant.window == 0) {
             revert MissingMerchant();
@@ -91,18 +107,22 @@ contract MerchantRegistry is IMerchantRegistry {
     /**
      * Updates the Merchant's payout address
      * Ideally, will send a cross-chain message to notify BillingAdapter
-     * 
+     *
      * This will update the payout address, if it exists
      * Subsequent charges will deal with the new _payout
-     * 
+     *
      * There may be a couple minutes delay (due to cross-chain messaging)
      * Charges happen on the BillingAdapter, so a cross-chain message is needed to notify
-     * 
+     *
      * @param _mid The merchant address
      * @param _cid The chain ID where payout is configured
      * @param _payout The address to pay to
      */
-    function setPayoutAddress(address _mid, uint256 _cid, address _payout) external {
+    function setPayoutAddress(
+        address _mid,
+        uint256 _cid,
+        address _payout
+    ) external {
         if (msg.sender != _mid) {
             revert Unauthorized();
         }
@@ -125,14 +145,63 @@ contract MerchantRegistry is IMerchantRegistry {
         emit PayoutAddressSet(_mid, _cid, _payout, oldAddr);
     }
 
+    function updateAllowedToken(
+        address _mid,
+        uint256 _cid,
+        address[] memory _tokens,
+        bool _adding
+    ) external {
+        if (msg.sender != _mid) {
+            revert Unauthorized();
+        }
+        Merchant storage merchant = merchants[_mid];
+        if (!merchant.active || merchant.window == 0) {
+            revert MissingMerchant();
+        }
+
+        require(_tokens.length > 0, "No tokens submitted!");
+        for (uint i = 0; i < _tokens.length; i++) {
+            // Ensure token is not already approved
+            // Revert if token contains zeroAddress
+            // Ensure token is supported on chain registry
+            bool supported = chainReg.isTokenSupported(_cid, _tokens[i]);
+            if (_tokens[i] == address(0) || !supported) {
+                revert UnsupportedToken();
+            }
+
+            bytes32 route = keccak256(abi.encode(_mid, _cid, _tokens[i]));
+            tokenAllowed[route] = _adding ? true : false;
+        }
+
+        emit TokensAdded(_mid, _cid, _tokens, _adding);
+    }
+
     function getMerchant(address _mid) external view returns (Merchant memory) {
         return merchants[_mid];
     }
 
-    function getPayoutAddress(address _mid, uint256 _cid) external view returns (address) {
+    function getPayoutAddress(
+        address _mid,
+        uint256 _cid
+    ) external view returns (address) {
         bytes32 route = keccak256(abi.encode(_mid, _cid));
 
         return payoutAddresses[route];
+    }
+
+    function isApprovedToken(
+        address _mid,
+        uint256 _cid,
+        address _token
+    ) external view returns (bool) {
+        Merchant memory merchant = merchants[_mid];
+        if (!merchant.active || merchant.window == 0) {
+            revert MissingMerchant();
+        }
+
+        // Compose the route
+        bytes32 route = keccak256(abi.encode(_mid, _cid, _token));
+        return tokenAllowed[route];
     }
 
     function setSubscriptionManager(address _mgr) external {

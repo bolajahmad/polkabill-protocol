@@ -10,20 +10,20 @@ struct Plan {
     address merchantId; // The ID of the merchant that owns the plan
     uint256 price;  // The price of the plan to charge
     uint256 interval;   // The duration of the plan
-    uint32[] chainId; // The allowed chains where payments execute
-    address[] token;  // The allowed tokens per chain
     uint256 grace;  // The grace period of the plan (always overrides unless == 0)
     bool active;
     bytes metadata;
 }
 
-event PlanCreated(uint256 indexed planId, uint256 indexed merchantId);
-event PlanUpdated(uint256 indexed planId, bool active);
+event PlanCreated(uint256 indexed planId, address indexed merchantId, uint256 price);
+event PlanUpdated(uint256 indexed planId, uint256 price, uint256 grace, bool active);
+
+error InvalidPlanParameter();
 
 interface IPlanRegistry {
-    function createPlan(address mId, uint256 price, uint256 interval, uint32 chainId, address token, uint256 grace, bytes calldata metadata) external returns (uint256 planId);
+    function createPlan(uint256 price, uint256 interval, uint256 grace, bytes calldata metadata) external returns (uint256 planId);
 
-    function updatePlan(uint256 planId, uint256 price, uint256 interval, uint256 grace) external;
+    function updatePlan(uint256 planId, uint256 price, uint256 grace) external;
 
     function setPlanStatus(uint256 planId, bool active) external;
 
