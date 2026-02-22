@@ -57,7 +57,6 @@ contract PlanRegistry is IPlanRegistry {
 
         plan.price = _price == 0 ? plan.price : _price;
         plan.grace = _grace;
-        plans[_pid] = plan;
 
         emit PlanUpdated(_pid, _price, _grace, plan.active);
     }
@@ -69,7 +68,6 @@ contract PlanRegistry is IPlanRegistry {
         }
 
         plan.active = _active;
-        plans[_pid] = plan;
 
         emit PlanUpdated(_pid, plan.price, plan.grace, _active);
     }

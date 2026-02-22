@@ -51,6 +51,8 @@ contract MerchantRegistry is IMerchantRegistry {
 
         emit MerchantCreated(_owner, _meta);
         mId = _owner;
+        // TODO add cross chain message to BillingAdapter
+        // Notify of new merchant to setup billing adapter
     }
 
     function updateMerchantConfig(

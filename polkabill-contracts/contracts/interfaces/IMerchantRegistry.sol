@@ -15,6 +15,12 @@ struct Merchant {
     bytes metadata; // IPFS hash of data
 }
 
+enum MerchantStatus {
+    NULL,
+    ACTIVE,
+    INACTIVE
+}
+
 // Emitted when a new merchant is created
 event MerchantCreated(address indexed mId, bytes indexed metadata);
 event MerchantStatusUpdated(address indexed mId, bool status);
