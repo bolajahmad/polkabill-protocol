@@ -18,17 +18,18 @@ struct Subscription {
 }
 
 event Subscribed(uint256 indexed subId, address subscriber, uint256 planId);
-event SubscriptionUpdated(uint256 indexed subscriptionId, Status status);
-// event PaymentConfirmed(uint256 indexed subscriptionId, uint256 billingCycle);
+event SubscriptionUpdated(uint256 indexed subscriptionId, Status status, address by);
+event SubscriptionPaid(uint256 indexed subscriptionId, uint256 billingCycle, uint256 _nextCharge);
 
 error InsufficientAllowance();
 error SubscriptionMissing();
+error SubscriptionCancelled();
 error PlanNotActive();
 error MerchantNotActive();
 error NotSubscriber();
 
 interface ISubscriptionManager {
-    function subscribe(uint256 planId, uint256 start, address subscriber) external returns (uint256 subscriptionId);
+    function subscribe(uint256 planId) external returns (uint256 subscriptionId);
 
     function confirmPayment(uint256 subscriptionId, uint256 billingCycle) external view returns (bool);
 
@@ -39,4 +40,6 @@ interface ISubscriptionManager {
     function cancel(uint256 subscriptionId) external;
 
     function getSubscription(uint256 subscriptionId) external view returns (Subscription memory);
+
+    function confirmCharge(uint256 subId, uint256 cycle) external;
 }

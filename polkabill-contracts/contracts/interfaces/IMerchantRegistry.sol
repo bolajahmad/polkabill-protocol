@@ -9,34 +9,43 @@ pragma solidity ^0.8.17;
  */
 
 struct Merchant {
-    address owner;  // Merchant's admin wallet address
     uint256 grace;  // Default grace period, if the plan doesn't have one (in seconds)
     uint256 window; // Default billing window before due date (, in secomds)
     bool active;    // If false, block new subscriptions
     bytes metadata; // IPFS hash of data
 }
 
-struct Payout {
-    address payoutAddr; // Where merchant receives funds
-    uint32 chainId; // The chain where this payment happens
-    bool enabled;   // Whether this `Payout` option is enabled
+enum MerchantStatus {
+    NULL,
+    ACTIVE,
+    INACTIVE
 }
 
 // Emitted when a new merchant is created
-event MerchantCreated(uint256 indexed mId, address indexed owner);
-event MerchntUpdated(uint256 indexed mId, bool status);
-event PayoutAddressSet(uint256 indexed mId, uint32 indexed chainId, address payoutAddr);
+event MerchantCreated(address indexed mId, bytes indexed metadata);
+event MerchantStatusUpdated(address indexed mId, bool status);
+event MerchantUpdated(address indexed mid, uint256 _grace, uint256 window, bytes metadata);
+event PayoutAddressSet(address indexed mId, uint256 indexed chainId, address payoutAddr, address old);
+event TokensAdded(address indexed mid, uint256 indexed cid, address[] tokens, bool isAdding);
+
+error MerchantNotUnique();
+error MissingMerchant();
+error Unauthorized();
+error UnsupportedToken();
+error UnsupportedChain();
 
 interface IMerchantRegistry {
-    function createMerchant(address owner, uint256 grace, uint256 window, bytes calldata metadata) external returns (uint256 mId);
+    function createMerchant(address owner, uint256 grace, uint256 window, bytes calldata metadata) external returns (address mId);
 
-    function updateMerchantConfig(uint256 mId, uint256 grace, uint256 window, bytes calldata metadata) external;
+    function updateMerchantConfig(address mId, uint256 grace, uint256 window, bytes calldata metadata) external;
 
-    function setMerchantStatus(uint256 mId, bool active) external;
+    function setMerchantStatus(address mId, bool active) external;
 
-    function setPayoutAddress(uint256 mId, uint32 chainId, address payoutAddress) external;
+    function setPayoutAddress(address mId, uint256 chainId, address payoutAddress) external;
 
-    function getMerchant(uint256 mId) external view returns (Merchant memory);
+    function getMerchant(address mId) external view returns (Merchant memory);
 
-    function getPayoutAddress(uint256 mId, uint32 chainId) external returns (address);
+    function getPayoutAddress(address mId, uint256 chainId) external returns (address);
+
+    function isApprovedToken(address mid, uint256 cid, address token) external view returns (bool);
 }

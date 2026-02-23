@@ -12,6 +12,11 @@ const config: HardhatUserConfig = {
       chainId: 420420417,
       accounts: [vars.get('PRIVATE_KEY')],
     },
+    baseSepolia: {
+      chainId: 84532,
+      url: "https://base-sepolia.gateway.tenderly.co",
+      accounts: [vars.get("PRIVATE_KEY")],
+    }
   },
 };
 
