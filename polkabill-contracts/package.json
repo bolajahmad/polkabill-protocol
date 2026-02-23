@@ -22,6 +22,7 @@
   "dependencies": {
     "@hyperbridge/core": "^1.6.0",
     "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
     "@polytope-labs/solidity-merkle-trees": "^0.4.0"
   }
 }

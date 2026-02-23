@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,36 +9,57 @@ import {HyperApp} from "@hyperbridge/core/contracts/apps/HyperApp.sol";
 import {IncomingPostRequest} from "@hyperbridge/core/contracts/interfaces/IApp.sol";
 import {StateMachine} from "@hyperbridge/core/contracts/libraries/StateMachine.sol";
 import {PostRequest} from "@hyperbridge/core/contracts/libraries/Message.sol";
-import {IDispatcher,DispatchPost} from "@hyperbridge/core/contracts/interfaces/IDispatcher.sol";
+import {IDispatcher, DispatchPost} from "@hyperbridge/core/contracts/interfaces/IDispatcher.sol";
 
 import "./interfaces/IBillingAdapter.sol";
 
-contract BillingAdapter is HyperApp, IBillingAdapter, Ownable, ReentrancyGuard {
-    address private immutable _host;
+contract BillingAdapter is
+    HyperApp,
+    IBillingAdapter,
+    OwnableUpgradeable,
+    ReentrancyGuard
+{
+    address private _host;
     mapping(address => bool) private tokens;
-    mapping(bytes32 => bool) private executedCharge;
     uint256 private fee = 5 * 10 ** 17; // 0.5 fee for each charge, can be updated by owner
     bytes private hubControl;
+    bool private initialized;
 
-    IERC20 public immutable feeToken;
+    mapping(bytes32 => bool) public charges;
+
+    IERC20 public feeToken;
+
+    modifier onlyAfterInitialize() {
+        require(initialized, "Not initialized");
+        _;
+    }
 
     /**
-     * 
+     *
      * @param _h The HyperApp contract for the chain
      * @param _hub The keccak hash of the hub controller
      */
-    constructor(address _h, bytes memory _hub, address _fee) Ownable(msg.sender) {
+    function initialize(
+        address _h,
+        bytes memory _hub,
+        address _fee
+    ) public onlyOwner {
+        require(!initialized, "Already initialized");
+        __Ownable_init(msg.sender);
         _host = _h;
         hubControl = _hub;
         feeToken = IERC20(_fee);
         feeToken.approve(_host, type(uint256).max);
+        initialized = true;
     }
 
     function host() public view override returns (address) {
         return _host;
     }
 
-    function onAccept(IncomingPostRequest calldata _incoming) external override onlyHost nonReentrant {
+    function onAccept(
+        IncomingPostRequest calldata _incoming
+    ) external override onlyHost nonReentrant onlyAfterInitialize {
         if (keccak256(_incoming.request.from) != keccak256(hubControl)) {
             revert UnregisteredSource();
         }
@@ -47,29 +68,62 @@ contract BillingAdapter is HyperApp, IBillingAdapter, Ownable, ReentrancyGuard {
         }
 
         // Decode bytes from data
-        (uint8 _type, bytes memory params) = abi.decode(_incoming.request.body, (uint8, bytes));
+        (uint8 _type, bytes memory params) = abi.decode(
+            _incoming.request.body,
+            (uint8, bytes)
+        );
         if (RequestType(_type) == RequestType.TOKEN_UPDATED) {
             // Update Token Route
             (address _token, bool _add) = abi.decode(params, (address, bool));
             _updateToken(_token, _add);
-        } else if  (RequestType(_type) == RequestType.CHARGE) {
-            (uint256 _subid, uint256 _amount, address _subscriber, address _token, uint256 _cycle, address _payout) = abi.decode(params, (uint256, uint256, address, address, uint256, address));
+        } else if (RequestType(_type) == RequestType.CHARGE) {
+            (
+                uint256 _subid,
+                uint256 _amount,
+                address _subscriber,
+                address _token,
+                uint256 _cycle,
+                address _payout
+            ) = abi.decode(
+                    params,
+                    (uint256, uint256, address, address, uint256, address)
+                );
             _charge(_subid, _amount, _subscriber, _token, _cycle, _payout);
         } else {
             revert InvalidRequestType();
         }
     }
 
-    function onPostRequestTimeout(PostRequest memory request) external override {
-        // Just resend the message
-        IDispatcher(_host).dispatch(DispatchPost({
-            body: request.body,
-            dest: request.dest,
-            timeout: uint64(0),
-            to: abi.encodePacked(hubControl),
-            fee: 0,
-            payer: address(this)
-        }));
+    function onPostRequestTimeout(
+        PostRequest memory request
+    ) external override onlyAfterInitialize {
+        (uint8 _type, bytes memory _params) = abi.decode(
+            request.body,
+            (uint8, bytes)
+        );
+
+        if (RequestType(_type) == RequestType.CHARGE) {
+            // Just resend the message
+            (uint256 _subid, uint256 _cycle, ) = abi.decode(
+                _params,
+                (uint256, uint256, uint256)
+            );
+            bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
+            if (!charges[chargeId]) return;
+
+            // Just resend the message
+            IDispatcher(_host).dispatch(
+                DispatchPost({
+                    body: request.body,
+                    dest: request.dest,
+                    timeout: uint64(0),
+                    to: abi.encodePacked(hubControl),
+                    fee: 0,
+                    payer: address(this)
+                })
+            );
+            return;
+        }
     }
 
     function withdrawFees(address token, address to) external onlyOwner {
@@ -84,7 +138,7 @@ contract BillingAdapter is HyperApp, IBillingAdapter, Ownable, ReentrancyGuard {
         emit FeeUpdated(_fee, oldFee);
     }
 
-    function _sourceChain() internal pure returns(bytes memory) {
+    function _sourceChain() internal pure returns (bytes memory) {
         // 1000 is the polkadot assetHub chain ID
         return StateMachine.polkadot(1000);
     }
@@ -95,32 +149,51 @@ contract BillingAdapter is HyperApp, IBillingAdapter, Ownable, ReentrancyGuard {
         } else {
             delete tokens[_token];
         }
+
+        emit TokenUpdated(_token, _add);
     }
 
-    function _charge(uint256 _subid, uint256 _amount, address _subscriber, address _token, uint256 _cycle, address _payout) internal {
+    function _charge(
+        uint256 _subid,
+        uint256 _amount,
+        address _subscriber,
+        address _token,
+        uint256 _cycle,
+        address _payout
+    ) internal {
         // Ensure token is supported
-        if (!tokens[_token]) {
-            revert InvalidRequestType();
-        }
-        // Ensure the charge is not executed before (idempotency)
-        bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
-        if (executedCharge[chargeId] || _payout == address(0)) {
+        if (!tokens[_token] || _payout == address(0)) {
             revert InvalidRequestType();
         }
         if (fee >= _amount) {
             revert InvalidRequestType();
         }
+        // Ensure the charge is not executed before (idempotency)
+        bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
+        if (charges[chargeId]) {
+            revert InvalidRequestType();
+        }
         // Initiate transfer action from subscriber
-        SafeERC20.safeTransferFrom(IERC20(_token), _subscriber, _payout, _amount - fee);
-        SafeERC20.safeTransferFrom(IERC20(_token), _subscriber, address(this), fee);
-        
-        executedCharge[chargeId] = true;
-        // TODO: Notify Hub contract about withdrawal status
+        SafeERC20.safeTransferFrom(
+            IERC20(_token),
+            _subscriber,
+            _payout,
+            _amount - fee
+        );
+        SafeERC20.safeTransferFrom(
+            IERC20(_token),
+            _subscriber,
+            address(this),
+            fee
+        );
+
+        charges[chargeId] = true;
         _notifyChargeSuccess(_subid, _cycle);
+        emit ChargeExecuted(_subid, _cycle);
     }
 
     function _notifyChargeSuccess(uint256 _subid, uint256 _cycle) internal {
-        bytes memory params = abi.encode(_subid, _cycle);
+        bytes memory params = abi.encode(_subid, _cycle, block.chainid);
         bytes memory body = abi.encode(1, params);
 
         DispatchPost memory post = DispatchPost({
@@ -131,13 +204,7 @@ contract BillingAdapter is HyperApp, IBillingAdapter, Ownable, ReentrancyGuard {
             fee: 0,
             payer: address(this)
         });
-        try IDispatcher(_host).dispatch(post) returns (bytes32 commitment) {
-           
-            emit ChargeExecuted(_subid, _cycle);
-        } catch Error(string memory reason) {
-            revert(string.concat("DISPATCH_FAILED: ", reason));
-        } catch {
-            revert("DISPATCH_FAILED: low-level revert");
-        }
+        bytes32 commitmentid = IDispatcher(_host).dispatch(post);
+        emit ChargeDispatchSent(_subid, _cycle, commitmentid);
     }
 }

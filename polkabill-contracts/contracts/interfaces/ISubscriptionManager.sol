@@ -29,7 +29,7 @@ error MerchantNotActive();
 error NotSubscriber();
 
 interface ISubscriptionManager {
-    function subscribe(uint256 planId, uint256 start) external returns (uint256 subscriptionId);
+    function subscribe(uint256 planId) external returns (uint256 subscriptionId);
 
     function confirmPayment(uint256 subscriptionId, uint256 billingCycle) external view returns (bool);
 
@@ -41,5 +41,5 @@ interface ISubscriptionManager {
 
     function getSubscription(uint256 subscriptionId) external view returns (Subscription memory);
 
-    function markSubscriptionPaid(uint256 _subId) external;
+    function confirmCharge(uint256 subId, uint256 cycle) external;
 }

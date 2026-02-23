@@ -13,7 +13,8 @@ enum RequestType {
 }
 
 event ChargeExecuted(uint256 indexed subscriptionId, uint256 billingCycle);
-event MerchantUpdated(address indexed mId, address indexed payout, bool active);
+event ChargeDispatchSent(uint256 indexed subscriptionId, uint256 billingCycle, bytes32 indexed commitmentId);
+event TokenUpdated(address indexed token, bool active);
 event PlanUpdated(address indexed mId, uint256 indexed pId, uint256 _price, bool status);
 event FeeUpdated(uint256 fee, uint256 oldFee);
 

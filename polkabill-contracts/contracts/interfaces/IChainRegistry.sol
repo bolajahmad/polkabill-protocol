@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 struct Adapter {
     address adapter;
     bool active;
-    address[] tokens;
 }
 
 event ChainRegistered(uint256 indexed chainId, address indexed billingAdapter);
@@ -25,6 +24,8 @@ interface IChainRegistry {
     function isChainSupported(uint256 chainId) external view returns (bool);
 
     function getBillingAdapter(uint256 chainId) external view returns (address);
+
+    function isValidAdapter(uint256 chainId, address adapter) external view returns (bool);
 
     function isTokenSupported(uint256 chainId, address token) external view returns (bool);
 

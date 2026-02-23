@@ -8,12 +8,19 @@ import {Merchant, IMerchantRegistry} from "./interfaces/IMerchantRegistry.sol";
 contract SubscriptionManager is ISubscriptionManager {
     IMerchantRegistry private merchantReg;
     IPlanRegistry private planReg;
+    address private controller;
     uint256 private nextSubId;
     mapping(uint256 => Subscription) private subscriptions;
 
-    constructor(address _merchant, address _planReg) {
+    modifier onlyController() {
+        require(msg.sender == controller, "NOT_CONTROLLER");
+        _;
+    }
+
+    constructor(address _merchant, address _planReg, address _controller) {
         merchantReg = IMerchantRegistry(_merchant);
         planReg = IPlanRegistry(_planReg);
+        controller = _controller;
         nextSubId = 1;
     }
 
@@ -24,10 +31,7 @@ contract SubscriptionManager is ISubscriptionManager {
      *
      * @param _pId The plan ID to subscribe to
      */
-    function subscribe(
-        uint256 _pId,
-        uint256 _start
-    ) external returns (uint256 _nextSubId) {
+    function subscribe(uint256 _pId) external returns (uint256 _nextSubId) {
         // Check that the plan exists
         Plan memory plan = planReg.getPlan(_pId);
         if (!plan.active) {
@@ -45,8 +49,8 @@ contract SubscriptionManager is ISubscriptionManager {
         subscriptions[_nextSubId] = Subscription({
             planId: _pId,
             subscriber: msg.sender,
-            startTime: _start,
-            nextChargeAt: _start + plan.interval,
+            startTime: block.timestamp,
+            nextChargeAt: block.timestamp + plan.interval,
             billingCycle: 1,
             status: Status.ACTIVE
         });
@@ -111,7 +115,7 @@ contract SubscriptionManager is ISubscriptionManager {
      * @param _subId The subscription ID
      */
     function isChargeAllowedMut(uint256 _subId) external returns (bool) {
-        Subscription memory sub = subscriptions[_subId];
+        Subscription storage sub = subscriptions[_subId];
         if (
             sub.planId == 0 ||
             sub.status == Status.NULL ||
@@ -140,7 +144,6 @@ contract SubscriptionManager is ISubscriptionManager {
         } else if (block.timestamp >= sub.nextChargeAt) {
             sub.status = Status.DUE;
         }
-        subscriptions[_subId] = sub;
 
         emit SubscriptionUpdated(_subId, sub.status, msg.sender);
 
@@ -158,15 +161,19 @@ contract SubscriptionManager is ISubscriptionManager {
         }
     }
 
-    function markSubscriptionPaid(uint256 _subId) external {
+    function confirmCharge(
+        uint256 _subId,
+        uint256 _cycle
+    ) external onlyController {
         // Ensure Subscription exists
-        Subscription memory sub = subscriptions[_subId];
+        Subscription storage sub = subscriptions[_subId];
         if (sub.billingCycle == 0 || sub.planId == 0) {
             revert SubscriptionCancelled();
         }
         if (sub.status == Status.CANCELLED) {
             revert SubscriptionCancelled();
         }
+        require(sub.billingCycle == _cycle, "INVALID_BILLING_CYCLE");
 
         Plan memory plan = planReg.getPlan(sub.planId);
 
@@ -175,7 +182,6 @@ contract SubscriptionManager is ISubscriptionManager {
         sub.nextChargeAt += plan.interval;
         sub.status = Status.ACTIVE;
 
-        subscriptions[_subId] = sub;
         emit SubscriptionPaid(_subId, sub.billingCycle, sub.nextChargeAt);
     }
 
@@ -188,12 +194,11 @@ contract SubscriptionManager is ISubscriptionManager {
     function cancel(uint256 _subId) external {
         Subscription storage sub = subscriptions[_subId];
         if (msg.sender == sub.subscriber) {
-            delete subscriptions[_subId];
+            sub.status = Status.CANCELLED;
+            emit SubscriptionUpdated(_subId, Status.CANCELLED, msg.sender);
         } else {
             revert NotSubscriber();
         }
-
-        emit SubscriptionUpdated(_subId, Status.CANCELLED, msg.sender);
     }
 
     function getSubscription(
