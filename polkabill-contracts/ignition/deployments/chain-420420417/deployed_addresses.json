@@ -1,3 +1,10 @@
 {
-  "SubManagerModule#SubscriptionManager": "0xfB50e85DFAFD85fD143DCeaCd0a633cbfBc6Fe35"
+  "ChainRegistryMod#ChainRegistry": "0x1f98772C698FEb08cCF2364B83599908c93BaDA9",
+  "SubscriptionManagerModule#SubscriptionManager": "0x9C72abD08280Ba646889fd293232c3d8f60038D5",
+  "MerchantRegistryMod#MerchantRegistry": "0x5Fd5fC2a89F7eF867bB977E9848F0f90EF42E678",
+  "PlanRegistryMod#PlanRegistry": "0xca35BAFFd15B593Fa7379A1ADb9e21145B813622",
+  "SubscriptionsControllerMod#SubscriptionsController": "0x1EE246cB1CeCCbcB5945D3B53c7aB6B200DCbF19",
+  "SubscriptionsControllerMod#ChainRegistry": "0x1f98772C698FEb08cCF2364B83599908c93BaDA9",
+  "SubscriptionsControllerMod#MerchantRegistry": "0x1f98772C698FEb08cCF2364B83599908c93BaDA9",
+  "SubscriptionsControllerMod#SubscriptionManager": "0x9C72abD08280Ba646889fd293232c3d8f60038D5"
 }

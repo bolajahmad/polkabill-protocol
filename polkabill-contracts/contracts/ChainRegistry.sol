@@ -19,7 +19,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
     mapping(uint256 => mapping(address => bool)) private tokenSupport;
 
     bytes32 private immutable adapterCodeHash;
-    ISubscriptionsController private immutable subsController;
+    ISubscriptionsController private subsController;
 
     constructor(bytes32 _hash, address _controller) Ownable(msg.sender) {
         adapterCodeHash = _hash;
@@ -67,6 +67,10 @@ contract ChainRegistry is IChainRegistry, Ownable {
         emit ChainStatusUpdated(_cid, _active);
     }
 
+    function updateController(address _newController) external onlyOwner {
+        subsController = ISubscriptionsController(_newController);
+    }
+
     /**
      * Updates support for a token on a chain's adapter
      *
@@ -91,7 +95,6 @@ contract ChainRegistry is IChainRegistry, Ownable {
 
         // check that token does not exist already
         // Only register Token, if it doesn't exist already
-        bool registered = tokenRegisteredToChain(_cid, _token);
         tokenSupport[_cid][_token] = false;
         emit TokenSupportUpdated(_cid, _token, _support);
         bytes memory body = abi.encode(_cid, _token, _support);
@@ -124,7 +127,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
         uint256 _cid,
         address _token
     ) external view returns (bool) {
-        (bool registered, ) = tokenRegisteredToChain(adapters[_cid], _token);
+        bool registered = tokenRegisteredToChain(_cid, _token);
         return registered;
     }
 

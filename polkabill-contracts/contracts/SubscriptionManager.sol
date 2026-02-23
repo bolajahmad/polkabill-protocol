@@ -4,8 +4,9 @@ pragma solidity ^0.8.28;
 import "./interfaces/ISubscriptionManager.sol";
 import {Plan, IPlanRegistry} from "./interfaces/IPlanRegistry.sol";
 import {Merchant, IMerchantRegistry} from "./interfaces/IMerchantRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-contract SubscriptionManager is ISubscriptionManager {
+contract SubscriptionManager is ISubscriptionManager, Ownable {
     IMerchantRegistry private merchantReg;
     IPlanRegistry private planReg;
     address private controller;
@@ -17,7 +18,7 @@ contract SubscriptionManager is ISubscriptionManager {
         _;
     }
 
-    constructor(address _merchant, address _planReg, address _controller) {
+    constructor(address _merchant, address _planReg, address _controller) Ownable(msg.sender) {
         merchantReg = IMerchantRegistry(_merchant);
         planReg = IPlanRegistry(_planReg);
         controller = _controller;
@@ -214,5 +215,25 @@ contract SubscriptionManager is ISubscriptionManager {
         }
 
         return sub;
+    }
+
+    function updateController(address _controller) external onlyOwner {
+        controller = _controller;
+    }
+
+    /**
+     * 
+     * @param _merchant Ideally, no reasons to ever update this
+     */
+    function updateMerchantRegistry(address _merchant) external onlyOwner {
+        merchantReg = IMerchantRegistry(_merchant);
+    }
+
+    /**
+     * 
+     * @param _plan Ideally, no reasons to ever update this
+     */
+    function updatePlanRegistry(address _plan) external onlyOwner {
+        planReg = IPlanRegistry(_plan);
     }
 }

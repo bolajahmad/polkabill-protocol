@@ -21,7 +21,7 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
     // Encodes the (mid, cid, token) => bool
     mapping(bytes32 => bool) private tokenAllowed;
 
-    ISubscriptionsController public immutable subsController;
+    ISubscriptionsController public subsController;
     ISubscriptionManager public subManager;
 
     modifier onlyUniqueMerchants(address _mid) {
@@ -217,6 +217,10 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
             body
         );
         emit TokensAdded(_mid, _cid, _tokens, _adding);
+    }
+
+    function updateController(address _controller) external onlyOwner {
+        subsController = ISubscriptionsController(_controller);
     }
 
     function getMerchant(address _mid) external view returns (Merchant memory) {

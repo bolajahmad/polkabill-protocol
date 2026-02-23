@@ -43,7 +43,7 @@ contract BillingAdapter is
         address _h,
         bytes memory _hub,
         address _fee
-    ) public onlyOwner {
+    ) public initializer {
         require(!initialized, "Already initialized");
         __Ownable_init(msg.sender);
         _host = _h;
