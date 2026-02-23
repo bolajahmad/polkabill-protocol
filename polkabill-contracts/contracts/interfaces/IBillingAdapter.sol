@@ -9,13 +9,14 @@ enum Status {
 
 enum RequestType {
     TOKEN_UPDATED,
-    CHARGE
+    CHARGE,
+    MERCHANT_UPDATED
 }
 
 event ChargeExecuted(uint256 indexed subscriptionId, uint256 billingCycle);
 event ChargeDispatchSent(uint256 indexed subscriptionId, uint256 billingCycle, bytes32 indexed commitmentId);
 event TokenUpdated(address indexed token, bool active);
-event PlanUpdated(address indexed mId, uint256 indexed pId, uint256 _price, bool status);
+event MerchantProfileUpdated(address indexed mId, uint256 indexed pId, uint256 _price, bool status);
 event FeeUpdated(uint256 fee, uint256 oldFee);
 
 error UnregisteredSource();

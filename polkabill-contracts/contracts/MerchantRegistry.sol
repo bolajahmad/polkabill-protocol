@@ -4,14 +4,24 @@ pragma solidity ^0.8.28;
 import "./interfaces/IMerchantRegistry.sol";
 import {ISubscriptionManager} from "./interfaces/ISubscriptionManager.sol";
 import {IChainRegistry, UnregisteredChain} from "./interfaces/IChainRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-contract MerchantRegistry is IMerchantRegistry {
+interface ISubscriptionsController {
+    function relayMerchantProfileUpdate(
+        uint256 _chain,
+        address _adapter,
+        bytes memory _body
+    ) external;
+}
+
+contract MerchantRegistry is IMerchantRegistry, Ownable {
     IChainRegistry private immutable chainReg;
     mapping(address => Merchant) private merchants;
     mapping(bytes32 => address) private payoutAddresses;
     // Encodes the (mid, cid, token) => bool
     mapping(bytes32 => bool) private tokenAllowed;
 
+    ISubscriptionsController public immutable subsController;
     ISubscriptionManager public subManager;
 
     modifier onlyUniqueMerchants(address _mid) {
@@ -27,8 +37,14 @@ contract MerchantRegistry is IMerchantRegistry {
         _;
     }
 
-    constructor(address _chain) {
+    constructor(
+        address _chain,
+        address _mgr,
+        address _controller
+    ) Ownable(msg.sender) {
         chainReg = IChainRegistry(_chain);
+        subManager = ISubscriptionManager(_mgr);
+        subsController = ISubscriptionsController(_controller);
     }
 
     function createMerchant(
@@ -36,12 +52,7 @@ contract MerchantRegistry is IMerchantRegistry {
         uint256 _grace,
         uint256 _window,
         bytes calldata _meta
-    )
-        external
-        onlyUniqueMerchants(_owner)
-        onlySubscriptionManager
-        returns (address mId)
-    {
+    ) external onlyUniqueMerchants(_owner) returns (address mId) {
         merchants[_owner] = Merchant({
             grace: _grace,
             window: _window,
@@ -51,8 +62,6 @@ contract MerchantRegistry is IMerchantRegistry {
 
         emit MerchantCreated(_owner, _meta);
         mId = _owner;
-        // TODO add cross chain message to BillingAdapter
-        // Notify of new merchant to setup billing adapter
     }
 
     function updateMerchantConfig(
@@ -145,6 +154,21 @@ contract MerchantRegistry is IMerchantRegistry {
         payoutAddresses[route] = _payout;
 
         emit PayoutAddressSet(_mid, _cid, _payout, oldAddr);
+
+        // Dispatch cross chain message
+        bytes memory body = abi.encode(
+            _mid,
+            _cid,
+            new address[](0),
+            true,
+            _payout
+        );
+        address adapter = chainReg.getBillingAdapter(_cid);
+        ISubscriptionsController(subsController).relayMerchantProfileUpdate(
+            _cid,
+            adapter,
+            body
+        );
     }
 
     function updateAllowedToken(
@@ -166,6 +190,10 @@ contract MerchantRegistry is IMerchantRegistry {
             // Ensure token is not already approved
             // Revert if token contains zeroAddress
             // Ensure token is supported on chain registry
+            bool chainsupported = chainReg.isChainSupported(_cid);
+            if (_tokens[i] == address(0) || !chainsupported) {
+                revert UnsupportedChain();
+            }
             bool supported = chainReg.isTokenSupported(_cid, _tokens[i]);
             if (_tokens[i] == address(0) || !supported) {
                 revert UnsupportedToken();
@@ -174,7 +202,20 @@ contract MerchantRegistry is IMerchantRegistry {
             bytes32 route = keccak256(abi.encode(_mid, _cid, _tokens[i]));
             tokenAllowed[route] = _adding ? true : false;
         }
-
+        bytes32 payoutroute = keccak256(abi.encode(_mid, _cid));
+        bytes memory body = abi.encode(
+            _mid,
+            _cid,
+            _tokens,
+            _adding,
+            payoutAddresses[payoutroute]
+        );
+        address adapter = chainReg.getBillingAdapter(_cid);
+        ISubscriptionsController(subsController).relayMerchantProfileUpdate(
+            _cid,
+            adapter,
+            body
+        );
         emit TokensAdded(_mid, _cid, _tokens, _adding);
     }
 
@@ -206,7 +247,7 @@ contract MerchantRegistry is IMerchantRegistry {
         return tokenAllowed[route];
     }
 
-    function setSubscriptionManager(address _mgr) external {
+    function setSubscriptionManager(address _mgr) external onlyOwner {
         subManager = ISubscriptionManager(_mgr);
     }
 }

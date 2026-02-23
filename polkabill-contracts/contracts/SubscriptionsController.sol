@@ -12,24 +12,30 @@ import {PostRequest} from "@hyperbridge/core/contracts/libraries/Message.sol";
 
 import {IChainRegistry} from "./interfaces/IChainRegistry.sol";
 import {ISubscriptionManager} from "./interfaces/ISubscriptionManager.sol";
+import {IMerchantRegistry} from "./interfaces/IMerchantRegistry.sol";
+
 contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
     address private immutable _host;
     IERC20 public immutable feeToken;
     IChainRegistry public immutable chainRegistry;
+    IMerchantRegistry public immutable merchantRegistry;
     ISubscriptionManager public immutable subManager;
 
     mapping(bytes32 => bool) public processedCharge;
     mapping(bytes32 => bool) public tokenSyncs;
+    mapping(bytes32 => bool) public merchantSyncs;
 
     event ChargeConfirmed(uint256 indexed chainId, uint256 indexed subscriptionId, uint256 billingCycle);
     event TokenUpdateRelayed(uint256 indexed chainId, address indexed adapter, bool native);
     event ChargeRequestRelayed(uint256 indexed chainId, address indexed adapter, bytes body);
+    event MerchantProfileUpdated(uint256 indexed chainId, address indexed adapter, bytes body);
 
-    constructor(address _h, address _fee, address _chain, address _sub) Ownable(msg.sender) {
+    constructor(address _h, address _fee, address _chain, address _sub, address _merchant) Ownable(msg.sender) {
         _host = _h;
         chainRegistry = IChainRegistry(_chain);
         feeToken = IERC20(_fee);
         subManager = ISubscriptionManager(_sub);
+        merchantRegistry = IMerchantRegistry(_merchant);
         IERC20(feeToken).approve(_host, type(uint256).max);
     }
 
@@ -105,5 +111,23 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
 
         IDispatcher(_host).dispatch(post);
         emit ChargeRequestRelayed(_chain, _adapter, _body);
+    }
+
+    function relayMerchantProfileUpdate(uint256 _chain, address _adapter, bytes memory _body) external {
+        require(msg.sender == address(chainRegistry), "Unauthorized call!");
+        bytes memory dest = StateMachine.evm(_chain);
+        DispatchPost memory post = DispatchPost({
+            body: abi.encode(2, _body),
+            dest: dest,
+            timeout: uint64(0),
+            to: abi.encodePacked(_adapter),
+            fee: 0,
+            payer: address(this)
+        });
+
+        IDispatcher(_host).dispatch(post);
+        bytes32 syncId = keccak256(_body);
+        merchantSyncs[syncId] = true;
+        emit MerchantProfileUpdated(_chain, _adapter, _body);
     }
 }

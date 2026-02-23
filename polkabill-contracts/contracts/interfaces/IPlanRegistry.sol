@@ -12,10 +12,10 @@ struct Plan {
     uint256 interval;   // The duration of the plan
     uint256 grace;  // The grace period of the plan (always overrides unless == 0)
     bool active;
-    bytes metadata;
+    bytes32 metadata;
 }
 
-event PlanCreated(uint256 indexed planId, address indexed merchantId, uint256 price);
+event PlanCreated(uint256 indexed planId, address indexed merchantId, uint256 price, bytes metadata);
 event PlanUpdated(uint256 indexed planId, uint256 price, uint256 grace, bool active);
 
 error InvalidPlanParameter();

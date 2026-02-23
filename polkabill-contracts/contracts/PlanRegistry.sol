@@ -42,11 +42,11 @@ contract PlanRegistry is IPlanRegistry {
             interval: _interval,
             grace: _grace,
             active: true,
-            metadata: _metadata
+            metadata: keccak256(_metadata)
         });
 
         nextPlanId += 1;
-        emit PlanCreated(_pid, msg.sender, _price);
+        emit PlanCreated(_pid, msg.sender, _price, _metadata);
     }
 
     function updatePlan(uint256 _pid, uint256 _price, uint256 _grace) external {
@@ -54,6 +54,10 @@ contract PlanRegistry is IPlanRegistry {
         if (msg.sender != plan.merchantId) {
             revert Unauthorized();
         }
+        if (plan.merchantId == address(0) || plan.price == 0) {
+            revert InvalidPlanParameter();
+        }
+
 
         plan.price = _price == 0 ? plan.price : _price;
         plan.grace = _grace;

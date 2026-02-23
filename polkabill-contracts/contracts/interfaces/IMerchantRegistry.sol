@@ -32,6 +32,7 @@ error MerchantNotUnique();
 error MissingMerchant();
 error Unauthorized();
 error UnsupportedToken();
+error UnsupportedChain();
 
 interface IMerchantRegistry {
     function createMerchant(address owner, uint256 grace, uint256 window, bytes calldata metadata) external returns (address mId);
