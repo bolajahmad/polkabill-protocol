@@ -4,24 +4,42 @@ pragma solidity ^0.8.28;
 import "./interfaces/ISubscriptionManager.sol";
 import {Plan, IPlanRegistry} from "./interfaces/IPlanRegistry.sol";
 import {Merchant, IMerchantRegistry} from "./interfaces/IMerchantRegistry.sol";
+import {IChainRegistry, UnregisteredChain} from "./interfaces/IChainRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+
+interface ISubscriptionsController {
+    function relayChargeRequest(
+        uint256 _chain,
+        address _adapter,
+        bytes memory _body,
+        bool _native
+    ) external;
+}
 
 contract SubscriptionManager is ISubscriptionManager, Ownable {
     IMerchantRegistry private merchantReg;
     IPlanRegistry private planReg;
-    address private controller;
+    ISubscriptionsController private controller;
+    IChainRegistry private chainReg;
+
     uint256 private nextSubId;
     mapping(uint256 => Subscription) private subscriptions;
 
     modifier onlyController() {
-        require(msg.sender == controller, "NOT_CONTROLLER");
+        require(msg.sender == address(controller), "NOT_CONTROLLER");
         _;
     }
 
-    constructor(address _merchant, address _planReg, address _controller) Ownable(msg.sender) {
+    constructor(
+        address _merchant,
+        address _planReg,
+        address _controller,
+        address _chain
+    ) Ownable(msg.sender) {
         merchantReg = IMerchantRegistry(_merchant);
         planReg = IPlanRegistry(_planReg);
-        controller = _controller;
+        controller = ISubscriptionsController(_controller);
+        chainReg = IChainRegistry(_chain);
         nextSubId = 1;
     }
 
@@ -93,7 +111,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
      *
      * @param _subId The subscription ID
      */
-    function isChargeAllowed(uint256 _subId) external view returns (bool) {
+    function isChargeAllowed(uint256 _subId) public view returns (bool) {
         Subscription memory sub = subscriptions[_subId];
         Plan memory plan = planReg.getPlan(sub.planId);
         Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
@@ -162,6 +180,44 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         }
     }
 
+    function requestCharge(
+        uint256 _subId,
+        uint256 _cid,
+        address _token
+    ) external {
+        // Ensure the Chain ID is supported
+        if (!chainReg.isChainSupported(_cid)) {
+            revert UnregisteredChain();
+        }
+        address adapter = chainReg.getBillingAdapter(_cid);
+        require(adapter != address(0), "NO_ADAPTER_FOR_CHAIN");
+
+        if (!chainReg.isTokenSupported(_cid, _token)) {
+            revert UnregisteredChain();
+        }
+        Subscription storage sub = subscriptions[_subId];
+
+        require(isChargeAllowed(_subId), "CHARGE_NOT_ALLOWED");
+        require(sub.status != Status.CANCELLED, "CANCELLED");
+
+        sub.status = Status.DUE;
+
+        Plan memory plan = planReg.getPlan(sub.planId);
+        address payout = merchantReg.getPayoutAddress(plan.merchantId, _cid);
+
+        // Compile the crosschain message
+        bytes memory body = abi.encode(
+            _subId,
+            plan.price,
+            sub.subscriber,
+            _token,
+            sub.billingCycle,
+            payout
+        );
+        // Ensure merchant is registered on the chain
+        controller.relayChargeRequest(_cid, adapter, body, false);
+    }
+
     function confirmCharge(
         uint256 _subId,
         uint256 _cycle
@@ -218,11 +274,11 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     }
 
     function updateController(address _controller) external onlyOwner {
-        controller = _controller;
+        controller = ISubscriptionsController(_controller);
     }
 
     /**
-     * 
+     *
      * @param _merchant Ideally, no reasons to ever update this
      */
     function updateMerchantRegistry(address _merchant) external onlyOwner {
@@ -230,7 +286,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     }
 
     /**
-     * 
+     *
      * @param _plan Ideally, no reasons to ever update this
      */
     function updatePlanRegistry(address _plan) external onlyOwner {
