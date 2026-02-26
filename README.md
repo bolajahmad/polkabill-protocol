@@ -40,3 +40,8 @@ Polkabill uses a Hub + Adapter architecture for its smart contracts
 - Maintain charge state tracking
   
 Communication is handled via Hyperbridge (cross-chain messaging) and XCM.
+
+
+## Data Persistence
+
+Smart contract data is persisted using Subsquid indexing.
