@@ -24,8 +24,8 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
     ISubscriptionsController public subsController;
     ISubscriptionManager public subManager;
 
-    modifier onlyUniqueMerchants(address _mid) {
-        if (merchants[_mid].active && merchants[_mid].window > 0) {
+    modifier onlyUniqueMerchants() {
+        if (merchants[msg.sender].active && merchants[msg.sender].window > 0) {
             revert MerchantNotUnique();
         }
         _;
@@ -48,20 +48,19 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
     }
 
     function createMerchant(
-        address _owner,
         uint256 _grace,
         uint256 _window,
         bytes calldata _meta
-    ) external onlyUniqueMerchants(_owner) returns (address mId) {
-        merchants[_owner] = Merchant({
+    ) external onlyUniqueMerchants() returns (address mId) {
+        merchants[msg.sender] = Merchant({
             grace: _grace,
             window: _window,
             active: true,
             metadata: _meta
         });
 
-        emit MerchantCreated(_owner, _meta);
-        mId = _owner;
+        emit MerchantCreated(msg.sender, _meta);
+        mId = msg.sender;
     }
 
     function updateMerchantConfig(

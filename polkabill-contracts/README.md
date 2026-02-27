@@ -71,3 +71,13 @@ Using E2E testing, we can verify the full flow of the contracts:
 8. Retry logic
 9. State consistency after failure
 10. Invariants across multiple cycles
+
+## Deployment Order
+
+Contracts are deployed in certain orders based on how they are interrelated.
+
+1. [Chain Registry](./ignition//modules/ChainRegistry.ts).
+2. [Merchant Registry](./ignition/modules/MerchantRegistry.ts). Use the `ChainRegistry`, but use placeholders for `Controller` and `SubscriptionManager`
+3. [Plan Registry](./ignition/modules/PlanRegistry.ts). Pass the `MerchantRegistry` address
+4. [SubscriptionManager](./ignition/modules/SubscriptionManager.ts). Expects the Just deployed 3 addresses and a placeholder for `Controller`
+5. [SubscriptionController](./ignition/modules/SubscriptionsController.ts). Deploys the `SubscriptionController` and also calls the other contracts (at their deployed address(es)) to update their state(s) with the most recent deployments.

@@ -4,11 +4,12 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const SubscriptionManagerModule = buildModule("SubscriptionManagerModule", (m) => {
-  const merchantAddr = "0x5c34bBc08b951427aF65cc2608F6BE5852d3f037"
-  const planAddr = "0xFa0DD45434E310daC6932b92A1B78fFD0Ed19285";
+  const merchantAddr = "0x8499CBBCf79239Bf38E1056580C2020CA12C1cBa"
+  const planAddr = "0x39BBAAF9c319f5416FD83c0982d406b9DFf2c910";
   const controller = "0xFa0DD45434E310daC6932b92A1B78fFD0Ed19285";
+  const chain = "0x509b31A3868D90A02ee65331290fAaDE59adD951";
 
-  const subManager = m.contract("SubscriptionManager", [merchantAddr, planAddr, controller]);
+  const subManager = m.contract("SubscriptionManager", [merchantAddr, planAddr, controller, chain]);
 
   return { subManager };
 });
