@@ -1,0 +1,1 @@
+export const MerchantContractAddress = "0x5Fd5fC2a89F7eF867bB977E9848F0f90EF42E678";
