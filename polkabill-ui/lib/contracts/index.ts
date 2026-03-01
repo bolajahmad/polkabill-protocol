@@ -1,1 +1,5 @@
-export const MerchantContractAddress = "0x5Fd5fC2a89F7eF867bB977E9848F0f90EF42E678";
+export const MerchantContractAddress = "0x186C072307aE188fa19a8E921F0D952d7dFBe297";
+export const ChainRegistryContractAddress = "0x24B2876672969270eCb57e1B4B2620Fc65Ec8C94"
+export const PlanRegistryContractAddress = "0x8E706f71473A80603a9e86AE9E5164E296996e7A";
+export const SubscriptionManagerContractAddress = "0x18A1e425C762A37fc4c78Dd327D9d7823193046D";
+export const SubscriptionControllerContractAddress = "0xc1F2626dbf5bc743a91d4F3321A35dEbaa6DaDa7";

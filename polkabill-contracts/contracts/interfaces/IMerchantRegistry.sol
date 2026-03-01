@@ -35,7 +35,7 @@ error UnsupportedToken();
 error UnsupportedChain();
 
 interface IMerchantRegistry {
-    function createMerchant(address owner, uint256 grace, uint256 window, bytes calldata metadata) external returns (address mId);
+    function createMerchant(uint256 grace, uint256 window, bytes calldata metadata) external returns (address mId);
 
     function updateMerchantConfig(address mId, uint256 grace, uint256 window, bytes calldata metadata) external;
 

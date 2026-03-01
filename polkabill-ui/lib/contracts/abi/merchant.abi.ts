@@ -225,11 +225,6 @@ export const MerchantContractABI = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
         internalType: "uint256",
         name: "_grace",
         type: "uint256",

@@ -44,7 +44,6 @@ const merchantRegistrationSchema = z.object({
 });
 
 export const RegisterMerchantModal = () => {
-    const { address } = useConnection();
   const {
     isPending,
     error: writeError,
@@ -67,8 +66,6 @@ export const RegisterMerchantModal = () => {
   });
 
   const onSubmit = (formData: Record<string, string | number>) => {
-    if (!address) return;
-
     // Handle form submission
     console.log("Form data:", formData);
     // Call mutate to submit to blockchain
@@ -78,7 +75,7 @@ export const RegisterMerchantModal = () => {
       abi: MerchantContractABI,
       address: MerchantContractAddress,
       functionName: "createMerchant",
-      args: [address, grace, window, "0x"], // Assuming empty metadata for now
+      args: [grace, window, "0x"], // Assuming empty metadata for now
     });
   };
 
