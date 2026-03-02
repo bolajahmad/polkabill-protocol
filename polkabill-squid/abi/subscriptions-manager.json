@@ -3,21 +3,6 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_merchant",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_planReg",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_controller",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
           "name": "_chain",
           "type": "address"
         }

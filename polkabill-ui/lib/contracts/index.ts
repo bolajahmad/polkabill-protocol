@@ -1,7 +1,7 @@
-export const MerchantContractAddress = "0x97990b090231112677315f707976b4bDa436689A";
-export const ChainRegistryContractAddress = "0xD1BB4F0e0ae5178b35e2AF4A9ab21432a82FA248";
-export const PlanRegistryContractAddress = "0x45a33501380787989D6ec89908C89D109cAC0806";
-export const SubscriptionManagerContractAddress = "0x3cc6dE0F20F93Cc8f84fF22524816ecC6EEc87aE";
-export const SubscriptionControllerContractAddress = "0x6b20392efB4309976Cd955873331E866E5A554c8";
+export const MerchantContractAddress = "0x9C9e284ce0D6ED4b034B64fD56f101edBdA63652";
+export const ChainRegistryContractAddress = "0xf77e8b132A1977fBbC893478C4Bff30Ad4C91751";
+export const PlanRegistryContractAddress = "0x286A7C81Da809Ef072F9668Eeef82F7Bc3Ada679";
+export const SubscriptionManagerContractAddress = "0x21d4de374BF31123D9A602d2DCDeD72fC8495Bbd";
+export const SubscriptionControllerContractAddress = "0x0A8406cFcE379505EAEE1a401b9e0A22ECEaA936";
 
 export const BaseAdapterContractAddress = "0xc053dF1730941Be37Fe828aD17e241a59A986EA9";

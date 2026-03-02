@@ -25,8 +25,8 @@ const config: HardhatUserConfig = {
       url: "https://gateway.tenderly.co/public/sepolia",
       accounts: [vars.get("PRIVATE_KEY")],
     },
-    amoy: {
-      chainId: 80052,
+    polygonAmoy: {
+      chainId: 80002,
       url: "https://polygon-amoy.api.onfinality.io/public",
       accounts: [vars.get("PRIVATE_KEY")],
     }
@@ -35,6 +35,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       polkadotTestnet: vars.get("SUBSCAN_API_KEY"),
       baseSepolia: vars.get("ETHERSCAN_API_KEY"),
+      polygonAmoy: vars.get("ETHERSCAN_API_KEY"),
     },
     customChains: [
       {

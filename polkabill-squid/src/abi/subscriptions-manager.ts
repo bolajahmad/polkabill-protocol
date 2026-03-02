@@ -18,6 +18,7 @@ export const functions = {
     isChargeAllowedMut: fun("0x20d6a217", "isChargeAllowedMut(uint256)", {"_subId": p.uint256}, p.bool),
     owner: viewFun("0x8da5cb5b", "owner()", {}, p.address),
     renounceOwnership: fun("0x715018a6", "renounceOwnership()", {}, ),
+    requestCharge: fun("0xaec50b52", "requestCharge(uint256,uint256,address)", {"_subId": p.uint256, "_cid": p.uint256, "_token": p.address}, ),
     subscribe: fun("0x0f574ba7", "subscribe(uint256)", {"_pId": p.uint256}, p.uint256),
     transferOwnership: fun("0xf2fde38b", "transferOwnership(address)", {"newOwner": p.address}, ),
     updateController: fun("0x06cb5b66", "updateController(address)", {"_controller": p.address}, ),
@@ -74,6 +75,9 @@ export type OwnerReturn = FunctionReturn<typeof functions.owner>
 
 export type RenounceOwnershipParams = FunctionArguments<typeof functions.renounceOwnership>
 export type RenounceOwnershipReturn = FunctionReturn<typeof functions.renounceOwnership>
+
+export type RequestChargeParams = FunctionArguments<typeof functions.requestCharge>
+export type RequestChargeReturn = FunctionReturn<typeof functions.requestCharge>
 
 export type SubscribeParams = FunctionArguments<typeof functions.subscribe>
 export type SubscribeReturn = FunctionReturn<typeof functions.subscribe>

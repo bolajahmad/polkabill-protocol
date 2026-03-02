@@ -12,7 +12,7 @@ export const events = {
 }
 
 export const functions = {
-    createMerchant: fun("0xc524f9f6", "createMerchant(address,uint256,uint256,bytes)", {"_owner": p.address, "_grace": p.uint256, "_window": p.uint256, "_meta": p.bytes}, p.address),
+    createMerchant: fun("0x278d21e6", "createMerchant(uint256,uint256,bytes)", {"_grace": p.uint256, "_window": p.uint256, "_meta": p.bytes}, p.address),
     getMerchant: viewFun("0xb2734eaf", "getMerchant(address)", {"_mid": p.address}, p.struct({"grace": p.uint256, "window": p.uint256, "active": p.bool, "metadata": p.bytes})),
     getPayoutAddress: viewFun("0x27b0d9dc", "getPayoutAddress(address,uint256)", {"_mid": p.address, "_cid": p.uint256}, p.address),
     isApprovedToken: viewFun("0xb3384074", "isApprovedToken(address,uint256,address)", {"_mid": p.address, "_cid": p.uint256, "_token": p.address}, p.bool),

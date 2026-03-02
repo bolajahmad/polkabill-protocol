@@ -7,7 +7,7 @@ import {
   injected,
   webSocket,
 } from "wagmi";
-import { base, baseSepolia, mainnet, sepolia } from "wagmi/chains";
+import { base, baseSepolia, mainnet, polygon, polygonAmoy, sepolia } from "wagmi/chains";
 
 export const passetHub = {
   id: 420_420_417,
@@ -54,7 +54,7 @@ export const assetHub = {
 
 export function getConfig() {
   return createConfig({
-    chains: [passetHub, mainnet, sepolia, baseSepolia, base, assetHub],
+    chains: [passetHub, mainnet, sepolia, baseSepolia, base, polygonAmoy, polygon, assetHub],
     storage: createStorage({
       storage: cookieStorage,
     }),
@@ -69,6 +69,8 @@ export function getConfig() {
       [sepolia.id]: http(),
       [base.id]: http(),
       [baseSepolia.id]: http(),
+      [polygon.id]: http(),
+      [ polygonAmoy.id]: http(),
       [assetHub.id]: http(),
     },
   });

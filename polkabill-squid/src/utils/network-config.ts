@@ -8,11 +8,11 @@ import { assertNotNull } from "@subsquid/util-internal";
 //   MERCHANT_REGISTRY = "0x5Fd5fC2a89F7eF867bB977E9848F0f90EF42E678",
 // }
 export enum Contracts {
-  SUB_MANAGER = "0x3cc6dE0F20F93Cc8f84fF22524816ecC6EEc87aE",
-  PLAN_REGISTRY = "0x45a33501380787989D6ec89908C89D109cAC0806",
-  CHAIN_REGISTRY = "0xD1BB4F0e0ae5178b35e2AF4A9ab21432a82FA248",
-  SUB_CONTROLLER = "0x6b20392efB4309976Cd955873331E866E5A554c8",
-  MERCHANT_REGISTRY = "0x97990b090231112677315f707976b4bDa436689A",
+  SUB_MANAGER = "0x21d4de374BF31123D9A602d2DCDeD72fC8495Bbd",
+  PLAN_REGISTRY = "0x286A7C81Da809Ef072F9668Eeef82F7Bc3Ada679",
+  CHAIN_REGISTRY = "0xf77e8b132A1977fBbC893478C4Bff30Ad4C91751",
+  SUB_CONTROLLER = "0x0A8406cFcE379505EAEE1a401b9e0A22ECEaA936",
+  MERCHANT_REGISTRY = "0x9C9e284ce0D6ED4b034B64fD56f101edBdA63652",
 }
 
 export type NetworkConfig = {
@@ -24,10 +24,10 @@ export type NetworkConfig = {
 };
 
 export const networkConfig: NetworkConfig = {
-  gateway: "https://v2.archive.subsquid.io/network/asset-hub-paseo",
+  gateway: "https://v2.archive.subsquid.io/network/base-sepolia",
   rpcEndpoint: assertNotNull(
-    process.env.RPC_ASSETHUB_HTTP,
-    "No RPC endpoint supplied via RPC_ASSETHUB_HTTP",
+    process.env.RPC_BASE_SEPOLIA_HTTP,
+    "No RPC endpoint supplied via RPC_BASE_SEPOLIA_HTTP",
   ),
   finalityConfirmation: 75,
   startAtBlock: 6_082_465,

@@ -10,7 +10,6 @@ export const events = {
 }
 
 export const functions = {
-    approvedAdapterCodeHash: viewFun("0x2ba3da2f", "approvedAdapterCodeHash()", {}, p.bytes32),
     getBillingAdapter: viewFun("0x82ef7cf5", "getBillingAdapter(uint256)", {"_cid": p.uint256}, p.address),
     isChainSupported: viewFun("0x5221c1f0", "isChainSupported(uint256)", {"_cid": p.uint256}, p.bool),
     isTokenSupported: viewFun("0x75979f79", "isTokenSupported(uint256,address)", {"_cid": p.uint256, "_token": p.address}, p.bool),
@@ -25,10 +24,6 @@ export const functions = {
 }
 
 export class Contract extends ContractBase {
-
-    approvedAdapterCodeHash() {
-        return this.eth_call(functions.approvedAdapterCodeHash, {})
-    }
 
     getBillingAdapter(_cid: GetBillingAdapterParams["_cid"]) {
         return this.eth_call(functions.getBillingAdapter, {_cid})
@@ -58,9 +53,6 @@ export type OwnershipTransferredEventArgs = EParams<typeof events.OwnershipTrans
 export type TokenSupportUpdatedEventArgs = EParams<typeof events.TokenSupportUpdated>
 
 /// Function types
-export type ApprovedAdapterCodeHashParams = FunctionArguments<typeof functions.approvedAdapterCodeHash>
-export type ApprovedAdapterCodeHashReturn = FunctionReturn<typeof functions.approvedAdapterCodeHash>
-
 export type GetBillingAdapterParams = FunctionArguments<typeof functions.getBillingAdapter>
 export type GetBillingAdapterReturn = FunctionReturn<typeof functions.getBillingAdapter>
 

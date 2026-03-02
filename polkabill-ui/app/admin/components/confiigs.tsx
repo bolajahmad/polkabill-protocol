@@ -2,15 +2,48 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MOCK_CHAIN_CONFIGS } from "@/lib/mocks";
-import { formatCurrency } from "@/lib/utils";
+import {
+  formatCurrency,
+  handleContractError,
+  truncateAddress,
+} from "@/lib/utils";
 import { Dialog } from "@headlessui/react";
-import { AlertCircle, Plus, Settings } from "lucide-react";
+import { AlertCircle, Settings } from "lucide-react";
 import { useState } from "react";
 import { UpdateAdapterConfig } from "./create-adapter";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { useQuery } from "@tanstack/react-query";
+import { IAdapter, Status } from "@/lib/models/chains";
+import { useChains, useWriteContract } from "wagmi";
+import { TokenDisplayBadge } from "@/components/misc/tokens-badge";
+import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
+import { ChainRegistryContractAddress } from "@/lib/contracts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const AdminConfig = () => {
+  const chains = useChains();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data, isLoading } = useQuery<{ data: IAdapter[] }>({
+    queryKey: ["chain-list"],
+    queryFn: async () => fetch("/api/admin/chains").then((res) => res.json()),
+  });
+  const { mutate: toggleAdapter, isPending } = useWriteContract({
+    mutation: {
+      onError: (error) => handleContractError(error),
+      onSuccess: (data) => console.log({ data }),
+    },
+  });
+  const adapters = data?.data || [];
+
+  const toggleAdapterStatus = (cid: number, on: boolean) => {
+    toggleAdapter({
+      abi: ChainRegistryContractABI,
+      address: ChainRegistryContractAddress,
+      functionName: "setChainStatus",
+      args: [BigInt(cid), on],
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -39,38 +72,55 @@ export const AdminConfig = () => {
             </div>
           </CardHeader>
           <div className="divide-y divide-neutral-50">
-            {MOCK_CHAIN_CONFIGS.map((c) => (
-              <div key={c.id} className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold">
-                      {c.name} (ID: {c.id})
-                    </p>
-                    <p className="text-xs font-mono text-neutral-400">
-                      {c.adapter}
-                    </p>
+            {isLoading ? (
+              <Skeleton className="h-12 w-12 rounded-full" />
+            ) : (
+              adapters.map((c) => (
+                <div key={c.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-start gap-3">
+                      <div>
+                        <p className="text-sm font-bold">
+                          {chains.find((chain) => chain.id === c.id)?.name ||
+                            "Unknown"}{" "}
+                          (ID: {c.id})
+                        </p>
+                        <p className="text-xs font-mono text-neutral-400">
+                          {truncateAddress(c.address)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <Switch
+                          checked={c.status === Status.ACTIVE}
+                          onCheckedChange={(value) =>
+                            toggleAdapterStatus(c.id, value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold">{formatCurrency(0)}</p>
+                      <p className="text-[10px] text-neutral-400 uppercase font-bold">
+                        Accrued Fees
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold">
-                      {formatCurrency(c.fees)}
-                    </p>
-                    <p className="text-[10px] text-neutral-400 uppercase font-bold">
-                      Accrued Fees
-                    </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {c.tokens.map((t) => (
+                      <TokenDisplayBadge
+                        key={t}
+                        chainId={c.id}
+                        address={t as `0x${string}`}
+                      />
+                    ))}
+                    <div>
+                      <UpdateAdapterConfig chainId={c.id} />
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {c.tokens.map((t) => (
-                    <Badge key={t} className="text-[10px] py-0 px-2">
-                      {t}
-                    </Badge>
-                  ))}
-                  <div>
-                    <UpdateAdapterConfig chainId={84532} />
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
 
