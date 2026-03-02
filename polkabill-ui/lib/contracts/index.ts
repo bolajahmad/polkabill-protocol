@@ -3,3 +3,5 @@ export const ChainRegistryContractAddress = "0x24B2876672969270eCb57e1B4B2620Fc6
 export const PlanRegistryContractAddress = "0x8E706f71473A80603a9e86AE9E5164E296996e7A";
 export const SubscriptionManagerContractAddress = "0x18A1e425C762A37fc4c78Dd327D9d7823193046D";
 export const SubscriptionControllerContractAddress = "0xc1F2626dbf5bc743a91d4F3321A35dEbaa6DaDa7";
+
+export const BaseAdapterContractAddress = "0x0511d63630357B3af7D3101bA9d6860ec21d188E";

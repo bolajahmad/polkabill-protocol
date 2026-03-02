@@ -18,12 +18,13 @@ import {
   useDisconnect,
   useSwitchChain,
 } from "wagmi";
+import Link from "next/link";
 
 const userRole: string = "merchant";
 
 export const Navbar = () => {
   const chains = useChains();
-  const { isConnected, connector,address, chain } = useConnection();
+  const { isConnected, connector, address, chain } = useConnection();
   const { mutate: switchChain } = useSwitchChain();
   const { mutate: connect, isPending: isConnecting } = useConnect();
   const { mutate: disconnect, isPending: isDisconnecting } = useDisconnect();
@@ -31,22 +32,21 @@ export const Navbar = () => {
   console.log({ chain, isConnected, address });
   useEffect(() => {
     if (!chain) {
-        switchChain({ chainId: 420420417 })
+      switchChain({ chainId: 420420417 });
     }
-  }, [chain, switchChain])
+  }, [chain, switchChain]);
 
   return (
     <nav className="h-16 border-b border-neutral-100 bg-white/80 backdrop-blur-md sticky top-0 z-[90] px-6 flex items-center justify-between">
       <div className="flex items-center gap-8">
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => disconnect({ connector })}
-        >
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            P
+        <Link href="/">
+          <div className="flex items-center gap-2 cursor-pointer">
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-lg">
+              P
+            </div>
+            <span className="font-bold text-xl tracking-tight">PolkaBill</span>
           </div>
-          <span className="font-bold text-xl tracking-tight">PolkaBill</span>
-        </div>
+        </Link>
 
         {userRole !== "none" && (
           <div className="hidden md:flex items-center gap-1 bg-neutral-100 p-1 rounded-xl">
@@ -125,7 +125,9 @@ export const Navbar = () => {
                 className="gap-2 rounded-xl"
               >
                 <Wallet size={14} />
-                <span className="hidden sm:inline">{truncateAddress(address ?? "")}</span>
+                <span className="hidden sm:inline">
+                  {truncateAddress(address ?? "")}
+                </span>
               </Button>
             </>
           ) : (
