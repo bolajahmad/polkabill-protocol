@@ -2,8 +2,8 @@
 
 import { Wallet, ChevronDown, Bell, Menu, Globe, Circle } from "lucide-react";
 import { Button } from "../ui/button";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { cn, truncateAddress } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import {
   Menu as HeadlessMenu,
   MenuButton,
@@ -23,12 +23,17 @@ const userRole: string = "merchant";
 
 export const Navbar = () => {
   const chains = useChains();
-  const { isConnected, connector, chain } = useConnection();
+  const { isConnected, connector,address, chain } = useConnection();
   const { mutate: switchChain } = useSwitchChain();
   const { mutate: connect, isPending: isConnecting } = useConnect();
   const { mutate: disconnect, isPending: isDisconnecting } = useDisconnect();
 
-  console.log({ chains });
+  console.log({ chain, isConnected, address });
+  useEffect(() => {
+    if (!chain) {
+        switchChain({ chainId: 420420417 })
+    }
+  }, [chain, switchChain])
 
   return (
     <nav className="h-16 border-b border-neutral-100 bg-white/80 backdrop-blur-md sticky top-0 z-[90] px-6 flex items-center justify-between">
@@ -120,7 +125,7 @@ export const Navbar = () => {
                 className="gap-2 rounded-xl"
               >
                 <Wallet size={14} />
-                <span className="hidden sm:inline">0x71C...3E21</span>
+                <span className="hidden sm:inline">{truncateAddress(address ?? "")}</span>
               </Button>
             </>
           ) : (

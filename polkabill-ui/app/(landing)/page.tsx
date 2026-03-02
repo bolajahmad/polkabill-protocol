@@ -4,18 +4,30 @@ import { ComponentExample } from "@/components/component-example";
 import { FeatureCard, RoleCard } from "@/components/misc/stat-card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Building2, CreditCard, Globe, Loader2, ShieldCheck, UserPlus, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CreditCard,
+  Globe,
+  Loader2,
+  ShieldCheck,
+  UserPlus,
+  Zap,
+} from "lucide-react";
 import { useConnection } from "wagmi";
 import { RegisterMerchantModal } from "./(components)/register-merchant";
 import { useCheckIsMerchantProfile } from "@/lib/hooks/use-check-account";
+import Link from "next/link";
 
 export default function LandingPage() {
   const { isConnected, address, isConnecting } = useConnection();
-  const { hasMerchant, isLoading, merchant } = useCheckIsMerchantProfile(address!)
+  const { hasMerchant, isLoading, merchant } = useCheckIsMerchantProfile(
+    address!,
+  );
 
   const onSelectRole = (role: string) => {
     console.log({ role });
-  }
+  };
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col">
       {/* Hero Section */}
@@ -67,15 +79,14 @@ export default function LandingPage() {
               <ArrowRight size={18} />
             </Button>
           ) : !hasMerchant ? (
-              <RegisterMerchantModal />
+            <RegisterMerchantModal />
           ) : (
-            <Button
-              size="lg"
-              className="rounded-2xl px-8 gap-2"
-            >
-              Enter Merchant Portal
-              <ArrowRight size={18} />
-            </Button>
+            <Link href="/merchant">
+              <Button size="lg" className="rounded-2xl px-8 gap-2">
+                Enter Merchant Portal
+                <ArrowRight size={18} />
+              </Button>
+            </Link>
           )}
         </motion.div>
       </section>
@@ -103,23 +114,33 @@ export default function LandingPage() {
 
       {/* Role Selection (Simplified) */}
       <section className="py-20 px-6 max-w-6xl mx-auto w-full">
-        <h2 className="text-3xl font-bold text-center mb-12">Choose your portal</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">
+          Choose your portal
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <RoleCard 
+          <RoleCard
             title="Merchant"
             description="Register your business, create subscription plans, and manage your payouts."
             onClick={() => onSelectRole("merchant")}
-            features={["Custom Plans", "Revenue Analytics", "Multi-token Support"]}
+            features={[
+              "Custom Plans",
+              "Revenue Analytics",
+              "Multi-token Support",
+            ]}
             disabled={isConnected && status === "no-account"}
           />
-          <RoleCard 
+          <RoleCard
             title="Subscriber"
             description="Manage your active subscriptions, grant allowances, and track your history."
             onClick={() => onSelectRole("user")}
-            features={["One-click Subscribe", "Allowance Control", "Cross-chain Balances"]}
+            features={[
+              "One-click Subscribe",
+              "Allowance Control",
+              "Cross-chain Balances",
+            ]}
             disabled={isConnected && status === "no-account"}
           />
-          <RoleCard 
+          <RoleCard
             title="Protocol Admin"
             description="Configure chain parameters, manage roles, and monitor protocol health."
             onClick={() => onSelectRole("admin")}

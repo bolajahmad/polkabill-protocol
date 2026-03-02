@@ -54,7 +54,7 @@ export const RegisterMerchantModal = () => {
         onSuccess: (data) => console.log({ data }),
     }
   });
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(merchantRegistrationSchema),

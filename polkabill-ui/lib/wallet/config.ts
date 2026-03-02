@@ -2,8 +2,10 @@ import {
   cookieStorage,
   createConfig,
   createStorage,
+  fallback,
   http,
   injected,
+  webSocket,
 } from "wagmi";
 import { base, baseSepolia, mainnet, sepolia } from "wagmi/chains";
 
@@ -19,6 +21,7 @@ export const passetHub = {
   rpcUrls: {
     default: {
       // http: ['https://eth-rpc-testnet.polkadot.io/', 'https://testnet-passet-hub-eth-rpc.polkadot.io'],
+      // http: ["https://services.polkadothub-rpc.com/testnet"],
       http: ["https://services.polkadothub-rpc.com/testnet"],
     },
   },
@@ -58,7 +61,10 @@ export function getConfig() {
     ssr: true,
     connectors: [injected()],
     transports: {
-      [passetHub.id]: http(),
+      [passetHub.id]: fallback([
+        webSocket("wss://services.polkadothub-rpc.com/testnet"),
+        http("https://services.polkadothub-rpc.com/testnet"),
+      ]),
       [mainnet.id]: http(),
       [sepolia.id]: http(),
       [base.id]: http(),
