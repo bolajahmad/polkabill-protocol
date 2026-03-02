@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { MOCK_CHAIN_CONFIGS } from "@/lib/mocks";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog } from "@headlessui/react";
-import { AlertCircle, Settings } from "lucide-react";
+import { AlertCircle, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import { UpdateAdapterConfig } from "./create-adapter";
+import { Badge } from "@/components/ui/badge";
 
 export const AdminConfig = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,28 +28,49 @@ export const AdminConfig = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card>
           <CardHeader title="Chain Adapters">
-            Registry of deployed adapters
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-medium">Chain Adapters</h2>
+                <h4>Registry of deployed adapters</h4>
+              </div>
+              <div>
+                <UpdateAdapterConfig />
+              </div>
+            </div>
           </CardHeader>
           <div className="divide-y divide-neutral-50">
             {MOCK_CHAIN_CONFIGS.map((c) => (
-              <div key={c.id} className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold">{c.name}</p>
-                  <p className="text-xs font-mono text-neutral-400">
-                    {c.adapter}
-                  </p>
+              <div key={c.id} className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold">
+                      {c.name} (ID: {c.id})
+                    </p>
+                    <p className="text-xs font-mono text-neutral-400">
+                      {c.adapter}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold">
+                      {formatCurrency(c.fees)}
+                    </p>
+                    <p className="text-[10px] text-neutral-400 uppercase font-bold">
+                      Accrued Fees
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold">{formatCurrency(c.fees)}</p>
-                  <p className="text-[10px] text-neutral-400 uppercase font-bold">
-                    Accrued Fees
-                  </p>
+                <div className="flex flex-wrap gap-2">
+                  {c.tokens.map((t) => (
+                    <Badge key={t} className="text-[10px] py-0 px-2">
+                      {t}
+                    </Badge>
+                  ))}
+                  <div>
+                    <UpdateAdapterConfig chainId={84532} />
+                  </div>
                 </div>
               </div>
             ))}
-          </div>
-          <div className="p-4 bg-neutral-50/50">
-           <UpdateAdapterConfig />
           </div>
         </Card>
 

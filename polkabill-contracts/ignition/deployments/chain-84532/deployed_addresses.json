@@ -1,3 +1,8 @@
 {
-  "BillingAdapterMod#BillingAdapter": "0xc053dF1730941Be37Fe828aD17e241a59A986EA9"
+  "BillingAdapterMod#BillingAdapter": "0xc053dF1730941Be37Fe828aD17e241a59A986EA9",
+  "ChainRegistryMod#ChainRegistry": "0xf77e8b132A1977fBbC893478C4Bff30Ad4C91751",
+  "SubscriptionManagerModule#SubscriptionManager": "0x21d4de374BF31123D9A602d2DCDeD72fC8495Bbd",
+  "MerchantRegistryMod#MerchantRegistry": "0x9C9e284ce0D6ED4b034B64fD56f101edBdA63652",
+  "PlanRegistryMod#PlanRegistry": "0x286A7C81Da809Ef072F9668Eeef82F7Bc3Ada679",
+  "SubscriptionsControllerMod#SubscriptionsController": "0x0A8406cFcE379505EAEE1a401b9e0A22ECEaA936"
 }

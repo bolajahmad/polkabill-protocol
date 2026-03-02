@@ -20,9 +20,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
 
     ISubscriptionsController private subsController;
 
-    constructor(address _controller) Ownable(msg.sender) {
-        subsController = ISubscriptionsController(_controller);
-    }
+    constructor() Ownable(msg.sender) {}
 
     /**
      * This registers a new chain.
@@ -89,9 +87,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
             revert UnregisteredChain();
         }
 
-        // check that token does not exist already
-        // Only register Token, if it doesn't exist already
-        tokenSupport[_cid][_token] = false;
+        tokenSupport[_cid][_token] = _support;
         emit TokenSupportUpdated(_cid, _token, _support);
         bytes memory body = abi.encode(_cid, _token, _support);
 

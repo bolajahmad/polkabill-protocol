@@ -22,7 +22,16 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Loader2, ShieldCheck, X, XIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  Plus,
+  Settings,
+  ShieldCheck,
+  X,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { useConnection, useReadContract, useWriteContract } from "wagmi";
@@ -33,6 +42,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { UpdateTokenModal } from "./add-token-modal";
 
 const createAdapterSchema = z.object({
   chainId: z
@@ -44,17 +54,6 @@ const createAdapterSchema = z.object({
     .string()
     .min(1, "Adapter address is required")
     .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address"),
-});
-
-const tokensSchema = z.object({
-  tokens: z
-    .array(
-      z
-        .string()
-        .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address"),
-    )
-    .min(1, "Add at least one token address.")
-    .max(5, "You can add up to 5 token addresses."),
 });
 
 type Props = {
@@ -72,9 +71,7 @@ type Props = {
  * @returns
  */
 export const UpdateAdapterConfig = ({ chainId }: Props) => {
-    const { chain } = useConnection();
-  const [open, setOpen] = useState(false);
-  const [tokens, setTokens] = useState([]);
+  const [open, setOpen] = useState<"chain" | "token" | false>(false);
   const form = useForm({
     resolver: zodResolver(createAdapterSchema),
     defaultValues: {
@@ -82,24 +79,12 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
       adapter: "",
     },
   });
-  console.log({ chain });
-  const tokenForm = useForm<z.infer<typeof tokensSchema>>({
-    resolver: zodResolver(tokensSchema),
-    defaultValues: {
-      tokens: [""],
-    },
-  });
-  const { fields, append, remove } = useFieldArray({
-    control: tokenForm.control,
-    name: "tokens",
-  });
-  const {data: ownerData } = useReadContract({
+  const { data: ownerData } = useReadContract({
     abi: ChainRegistryContractABI,
     address: ChainRegistryContractAddress,
     functionName: "getBillingAdapter",
-    args: [BigInt(84532)]
-
-  })
+    args: [BigInt(84532)],
+  });
   console.log({ ownerData });
   const {
     mutate: createBillingAdapter,
@@ -107,8 +92,6 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
     isPending,
     isSuccess,
   } = useWriteContract();
-  const { mutate: updateSupportedTokens, error: updateTokensError } =
-    useWriteContract();
 
   const onSubmit = (formData: Record<string, string | number>) => {
     // Handle form submission
@@ -123,43 +106,29 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
     });
   };
 
-  const handleTokensUpdate = (data: Record<string, string[]>) => {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4">
-          <code>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-      position: "bottom-right",
-      classNames: {
-        content: "flex flex-col gap-2",
-      },
-      style: {
-        "--border-radius": "calc(var(--radius)  + 4px)",
-      } as React.CSSProperties,
-    });
-    const chainId = form.watch("chainId");
-
-    updateSupportedTokens({
-      abi: ChainRegistryContractABI,
-      address: ChainRegistryContractAddress,
-      functionName: "setTokenSupport",
-      args: [BigInt(chainId), data.tokens[0] as `0x${string}`, true],
-    });
-  };
-
   return (
     <>
-      <Button
-        variant="secondary"
-        onClick={() => setOpen(true)}
-        className="w-full rounded-xl"
-      >
-        {chainId ? "Update Chain" : "Add New Chain"}
-      </Button>
+      {chainId ? (
+        <button
+          onClick={() => setOpen("token")}
+          type="button"
+          className="text-[10px] font-bold text-neutral-400 hover:text-black flex items-center gap-1"
+        >
+          <Plus size={14} />
+          Add Token
+        </button>
+      ) : (
+        <Button
+          onClick={() => setOpen("chain")}
+          type="button"
+          className="gap-2 rounded-xl"
+        >
+          <Plus size={18} /> Add Chain
+        </Button>
+      )}
 
       <Dialog
-        open={open}
+        open={open !== false}
         onClose={() => setOpen(false)}
         className="relative z-50"
       >
@@ -171,116 +140,10 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
 
         {/* Full-screen container */}
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          {isSuccess ? (
+          {open == "token" ? (
             // Display the Token update modal also
             <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <DialogTitle className="text-xl font-bold">
-                  Add supported tokens to Adapter
-                </DialogTitle>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Form and content */}
-              <div className="mb-4">
-                <div className="space-y-4">
-                  <p className="text-sm text-neutral-500">
-                    Please confirm that the Tokens exist on the specified chains
-                    before proceeding.
-                  </p>
-
-                  {updateTokensError && (
-                    <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex gap-2 text-rose-600 text-xs">
-                      <AlertTriangle size={16} className="shrink-0" />
-                      <p>
-                        {updateTokensError.message ||
-                          "Transaction failed. Please try again."}
-                      </p>
-                    </div>
-                  )}
-
-                  <form
-                    id="form-rhf-tokens"
-                    onSubmit={form.handleSubmit(onSubmit)}
-                  >
-                    <FieldSet className="gap-4">
-                      <FieldLegend>Token Address(es)</FieldLegend>
-                      <FieldDescription>
-                        Enter up to 5 addresses where adapter can receive
-                        tokens.
-                      </FieldDescription>
-
-                      <FieldGroup className="gap-4">
-                        {fields.map((field, index) => {
-                          return (
-                            <Controller
-                              key={field.id}
-                              name={`tokens.${index}`}
-                              control={tokenForm.control}
-                              render={({ field: cField, fieldState }) => (
-                                <Field
-                                  orientation="horizontal"
-                                  data-invalid={fieldState.invalid}
-                                >
-                                  <FieldContent>
-                                    <InputGroup>
-                                      <InputGroupInput
-                                        {...cField}
-                                        id={`form-rhf-array-token-${index}`}
-                                        aria-invalid={fieldState.invalid}
-                                        placeholder="0x0000"
-                                        type="text"
-                                        autoComplete="address"
-                                      />
-                                      {fields.length > 1 && (
-                                        <InputGroupAddon align="inline-end">
-                                          <InputGroupButton
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            onClick={() => remove(index)}
-                                            aria-label={`Remove email ${index + 1}`}
-                                          >
-                                            <XIcon />
-                                          </InputGroupButton>
-                                        </InputGroupAddon>
-                                      )}
-                                    </InputGroup>
-                                    {fieldState.invalid && (
-                                      <FieldError errors={[fieldState.error]} />
-                                    )}
-                                  </FieldContent>
-                                </Field>
-                              )}
-                            />
-                          );
-                        })}
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => append("")}
-                          disabled={fields.length >= 5}
-                        >
-                          Add Token
-                        </Button>
-                      </FieldGroup>
-                      {tokenForm.formState.errors.tokens?.root && (
-                        <FieldError
-                          errors={[tokenForm.formState.errors.tokens.root]}
-                        />
-                      )}
-                    </FieldSet>
-                  </form>
-                </div>
-              </div>
+              <UpdateTokenModal chainId={chainId!} />
             </DialogPanel>
           ) : (
             <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
@@ -361,9 +224,7 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
                         render={({ field, fieldState }) => {
                           return (
                             <Field data-invalid={fieldState.invalid}>
-                              <FieldLabel>
-                                Billing Adapter
-                              </FieldLabel>
+                              <FieldLabel>Billing Adapter</FieldLabel>
                               <Input
                                 {...field}
                                 type="text"

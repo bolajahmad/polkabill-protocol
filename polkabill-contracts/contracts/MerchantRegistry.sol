@@ -39,12 +39,10 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
 
     constructor(
         address _chain,
-        address _mgr,
-        address _controller
+        address _mgr
     ) Ownable(msg.sender) {
         chainReg = IChainRegistry(_chain);
         subManager = ISubscriptionManager(_mgr);
-        subsController = ISubscriptionsController(_controller);
     }
 
     function createMerchant(

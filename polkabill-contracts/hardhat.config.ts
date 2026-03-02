@@ -6,9 +6,6 @@ import { vars } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.28",
-  etherscan: {
-    apiKey: vars.get("ETHERSCAN_API_KEY"),
-  },
   sourcify: {
     enabled: true,
   },
@@ -23,7 +20,35 @@ const config: HardhatUserConfig = {
       url: "https://base-sepolia.gateway.tenderly.co",
       accounts: [vars.get("PRIVATE_KEY")],
     },
+    sepolia: {
+      chainId: 11155111,
+      url: "https://gateway.tenderly.co/public/sepolia",
+      accounts: [vars.get("PRIVATE_KEY")],
+    },
+    amoy: {
+      chainId: 80052,
+      url: "https://polygon-amoy.api.onfinality.io/public",
+      accounts: [vars.get("PRIVATE_KEY")],
+    }
+  },
+  etherscan: {
+    apiKey: {
+      polkadotTestnet: vars.get("SUBSCAN_API_KEY"),
+      baseSepolia: vars.get("ETHERSCAN_API_KEY"),
+    },
+    customChains: [
+      {
+        network: "polkadotTestnet",
+        chainId: 420420417,
+        urls: {
+          apiURL:
+            "https://assethub-paseo.api.subscan.io/api/scan/evm/contract/verifysource",
+          browserURL: "https://assethub-paseo.subscan.io",
+        },
+      },
+    ],
   },
 };
 
 export default config;
+

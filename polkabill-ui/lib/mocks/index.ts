@@ -83,13 +83,55 @@ export const MOCK_SUBSCRIPTIONS = [
 ];
 
 export const MOCK_MERCHANT_PERFORMANCE = [
-  { id: "m1", name: "Acme Cloud", subs: 1242, revenue: 45901.50, churn: "1.2%", status: "active" },
-  { id: "m2", name: "Nebula VPN", subs: 840, revenue: 12400.00, churn: "2.5%", status: "active" },
-  { id: "m3", name: "Echo Music", subs: 450, revenue: 8210.00, churn: "3.1%", status: "active" },
+  {
+    id: "m1",
+    name: "Acme Cloud",
+    subs: 1242,
+    revenue: 45901.5,
+    churn: "1.2%",
+    status: "active",
+  },
+  {
+    id: "m2",
+    name: "Nebula VPN",
+    subs: 840,
+    revenue: 12400.0,
+    churn: "2.5%",
+    status: "active",
+  },
+  {
+    id: "m3",
+    name: "Echo Music",
+    subs: 450,
+    revenue: 8210.0,
+    churn: "3.1%",
+    status: "active",
+  },
 ];
 
 export const MOCK_CHAIN_CONFIGS = [
-  { id: 1, name: "Ethereum", adapter: "0x882...F112", fees: 1240.50, status: "active" },
-  { id: 137, name: "Polygon", adapter: "0x991...A882", fees: 450.00, status: "active" },
-  { id: 42161, name: "Arbitrum", adapter: "0x112...B991", fees: 820.00, status: "active" },
+  {
+    id: 1,
+    name: "Ethereum",
+    adapter: "0x882...F112",
+    fees: 1240.5,
+    status: "active",
+    tokens: ["USDC", "USDT"],
+  },
+  {
+    id: 137,
+    name: "Polygon",
+    adapter: "0x991...A882",
+    fees: 450.0,
+    status: "active",
+    tokens: ["USDC", "DAI"],
+  },
+  {
+    id: 42161,
+    name: "Arbitrum",
+    adapter: "0x112...B991",
+    fees: 820.0,
+    status: "active",
+    tokens: ["USDT"],
+  },
 ];

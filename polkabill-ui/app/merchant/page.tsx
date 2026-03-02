@@ -31,7 +31,7 @@ export default function MerchantsPortalPage() {
             </p>
           </div>
           <TabList className="flex items-center gap-1 bg-neutral-100 p-1 rounded-2xl">
-            {["overview", "plans", "payouts"].map((tab) => (
+            {["overview", "plans", "subscriptions", "settings"].map((tab) => (
               <Tab
               key={tab}
                 className={({ selected }) =>
@@ -55,6 +55,7 @@ export default function MerchantsPortalPage() {
           </TabPanel>
           <TabPanel>Merchant Plans</TabPanel>
           <TabPanel>Merchant Payouts</TabPanel>
+          <TabPanel>Merchant Settings</TabPanel>
         </TabPanels>
       </TabGroup>
     </div>

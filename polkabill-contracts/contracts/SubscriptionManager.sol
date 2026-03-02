@@ -31,14 +31,8 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     }
 
     constructor(
-        address _merchant,
-        address _planReg,
-        address _controller,
         address _chain
     ) Ownable(msg.sender) {
-        merchantReg = IMerchantRegistry(_merchant);
-        planReg = IPlanRegistry(_planReg);
-        controller = ISubscriptionsController(_controller);
         chainReg = IChainRegistry(_chain);
         nextSubId = 1;
     }
