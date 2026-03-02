@@ -61,6 +61,7 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
 
         emit MerchantCreated(msg.sender, _meta);
         mId = msg.sender;
+        emit MerchantUpdated(msg.sender, _grace, _window, _meta);
     }
 
     function updateMerchantConfig(

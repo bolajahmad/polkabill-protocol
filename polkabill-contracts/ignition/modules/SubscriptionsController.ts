@@ -8,9 +8,9 @@ const SubscriptionsControllerModule = buildModule(
   (m) => {
     const host = "0xbb26e04a71e7c12093e82b83ba310163eac186fa";
     const feeToken = "0x0dc440cf87830f0af564eb8b62b454b7e0c68a4b";
-    const chainReg = "0x24B2876672969270eCb57e1B4B2620Fc65Ec8C94";
-    const subManager = "0x18A1e425C762A37fc4c78Dd327D9d7823193046D";
-    const merchantReg = "0x1f98772C698FEb08cCF2364B83599908c93BaDA9";
+    const chainReg = "0xD1BB4F0e0ae5178b35e2AF4A9ab21432a82FA248";
+    const subManager = "0x3cc6dE0F20F93Cc8f84fF22524816ecC6EEc87aE";
+    const merchantReg = "0x97990b090231112677315f707976b4bDa436689A";
 
     const subscriptionsController = m.contract("SubscriptionsController", [
       host,

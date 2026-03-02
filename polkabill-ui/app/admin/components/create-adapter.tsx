@@ -25,7 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, Loader2, ShieldCheck, X, XIcon } from "lucide-react";
 import { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { useWriteContract } from "wagmi";
+import { useConnection, useReadContract, useWriteContract } from "wagmi";
 import z from "zod";
 import {
   InputGroup,
@@ -72,6 +72,7 @@ type Props = {
  * @returns
  */
 export const UpdateAdapterConfig = ({ chainId }: Props) => {
+    const { chain } = useConnection();
   const [open, setOpen] = useState(false);
   const [tokens, setTokens] = useState([]);
   const form = useForm({
@@ -81,6 +82,7 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
       adapter: "",
     },
   });
+  console.log({ chain });
   const tokenForm = useForm<z.infer<typeof tokensSchema>>({
     resolver: zodResolver(tokensSchema),
     defaultValues: {
@@ -91,6 +93,14 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
     control: tokenForm.control,
     name: "tokens",
   });
+  const {data: ownerData } = useReadContract({
+    abi: ChainRegistryContractABI,
+    address: ChainRegistryContractAddress,
+    functionName: "getBillingAdapter",
+    args: [BigInt(84532)]
+
+  })
+  console.log({ ownerData });
   const {
     mutate: createBillingAdapter,
     error: createAdapterError,
@@ -352,11 +362,11 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
                           return (
                             <Field data-invalid={fieldState.invalid}>
                               <FieldLabel>
-                                Billing window (in seconds)
+                                Billing Adapter
                               </FieldLabel>
                               <Input
                                 {...field}
-                                type="number"
+                                type="text"
                                 id="form-rhf-input-adapter"
                                 aria-invalid={fieldState.invalid}
                                 placeholder="0x0000"

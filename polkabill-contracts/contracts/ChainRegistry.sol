@@ -18,11 +18,9 @@ contract ChainRegistry is IChainRegistry, Ownable {
     mapping(uint256 => Adapter) adapters;
     mapping(uint256 => mapping(address => bool)) private tokenSupport;
 
-    bytes32 private immutable adapterCodeHash;
     ISubscriptionsController private subsController;
 
-    constructor(bytes32 _hash, address _controller) Ownable(msg.sender) {
-        adapterCodeHash = _hash;
+    constructor(address _controller) Ownable(msg.sender) {
         subsController = ISubscriptionsController(_controller);
     }
 
@@ -39,12 +37,10 @@ contract ChainRegistry is IChainRegistry, Ownable {
      * @param _adapter The deployed BillingAdapter on the chain
      */
     function registerChain(uint256 _cid, address _adapter) external onlyOwner {
-        if (adapters[_cid].adapter != address(0)) {
-            revert ChainExists();
-        }
-        if (keccak256(_adapter.code) != adapterCodeHash) {
-            revert InvalidAdapterCode();
-        }
+        // if (adapters[_cid].adapter != address(0)) {
+        //     revert ChainExists();
+        // }
+        require(adapters[_cid].adapter == address(0), "CHAIN_EXISTS");
 
         adapters[_cid] = Adapter({adapter: _adapter, active: false});
 
@@ -129,10 +125,6 @@ contract ChainRegistry is IChainRegistry, Ownable {
     ) external view returns (bool) {
         bool registered = tokenRegisteredToChain(_cid, _token);
         return registered;
-    }
-
-    function approvedAdapterCodeHash() external view returns (bytes32) {
-        return adapterCodeHash;
     }
 
     function tokenRegisteredToChain(

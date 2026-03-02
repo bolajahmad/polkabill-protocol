@@ -4,10 +4,16 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const ChainRegistryModule = buildModule("ChainRegistryMod", (m) => {
-    const adapterCodeHash = "0x19bb87b32eeeb7040194ee9eb2efd59afe06ed92295fb1ce19848340834f257b";
     const controller = "0x0dc440cf87830f0af564eb8b62b454b7e0c68a4b"
 
-  const chainReg = m.contract("ChainRegistry", [adapterCodeHash, controller]);
+  const chainReg = m.contract("ChainRegistry", [controller]);
+
+  // Register one billing adapter for Base Sepolia (84532) - this is needed for the SubscriptionManager to work properly
+  // m.call(
+  //   chainReg,
+  //   "registerChain",
+  //   [84532n, "0xc053dF1730941Be37Fe828aD17e241a59A986EA9"]
+  // );
 
   return { chain: chainReg };
 });
