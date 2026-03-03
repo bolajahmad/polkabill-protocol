@@ -43,18 +43,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { UpdateTokenModal } from "./add-token-modal";
-
-const createAdapterSchema = z.object({
-  chainId: z
-    .string()
-    .min(1, "Chain ID is required")
-    .transform((i) => Number(i))
-    .refine((n) => n > 0, "Chain ID must be a positive number"),
-  adapter: z
-    .string()
-    .min(1, "Adapter address is required")
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address"),
-});
+import { createAdapterSchema } from "@/lib/schemas";
 
 type Props = {
   chainId?: number;
@@ -79,13 +68,6 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
       adapter: "",
     },
   });
-  const { data: ownerData } = useReadContract({
-    abi: ChainRegistryContractABI,
-    address: ChainRegistryContractAddress,
-    functionName: "getBillingAdapter",
-    args: [BigInt(84532)],
-  });
-  console.log({ ownerData });
   const {
     mutate: createBillingAdapter,
     error: createAdapterError,
@@ -143,7 +125,10 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
           {open == "token" ? (
             // Display the Token update modal also
             <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-              <UpdateTokenModal chainId={chainId!} />
+              <UpdateTokenModal
+                onComplete={() => setOpen(false)}
+                chainId={chainId!}
+              />
             </DialogPanel>
           ) : (
             <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
@@ -260,7 +245,7 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
                             Creating Account...
                           </span>
                         ) : (
-                          "Create Merchant Account"
+                          "Register Adapter"
                         )}
                       </Button>
                     </div>

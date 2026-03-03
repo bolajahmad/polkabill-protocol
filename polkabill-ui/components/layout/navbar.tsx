@@ -29,7 +29,6 @@ export const Navbar = () => {
   const { mutate: connect, isPending: isConnecting } = useConnect();
   const { mutate: disconnect, isPending: isDisconnecting } = useDisconnect();
 
-  console.log({ chain, isConnected, address });
   useEffect(() => {
     if (!chain) {
       switchChain({ chainId: 420420417 });

@@ -105,9 +105,23 @@ export function handleTokensAdded(log: any, em: EntityManager) {
 
   // Find payout for this merchant + chain
   const payout = em.getPayoutByMerchantAndChain(merchantId, Number(cid));
-  if (!payout) return;
+  if (!payout) {
+    // Create payout if it doesn't exist
+    const payoutId = merchantPayoutId(mid, cid);
+    const newPayout = new Payout({
+      id: payoutId,
+      merchant,
+      chainId: Number(cid),
+      address: "", // Address will be set via PayoutAddressSet event
+      tokens: isAdding ? tokens : [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    em.createPayout(newPayout);
+    return;
+  }
 
-  const currentTokens = payout.tokens || [];
+  const currentTokens = payout.tokens && Array.isArray(payout.tokens) ? payout.tokens : [];
   const updatedTokens = isAdding
     ? Array.from(new Set([...currentTokens, ...tokens]))
     : currentTokens.filter((t) => !tokens.includes(t));

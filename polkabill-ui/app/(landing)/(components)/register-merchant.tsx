@@ -50,9 +50,12 @@ export const RegisterMerchantModal = () => {
     mutate: createMerchant,
   } = useWriteContract({
     mutation: {
-        onError: (error) => console.log({ error }),
-        onSuccess: (data) => console.log({ data }),
-    }
+      onError: (error) => console.log({ error }),
+      onSuccess: (data) => {
+        console.log({ data });
+        setOpen(false)
+      },
+    },
   });
   const [open, setOpen] = useState(false);
 

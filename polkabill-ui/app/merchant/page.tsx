@@ -16,15 +16,42 @@ import {
 } from "lucide-react";
 import { MerchantsOverview } from "./components/merchants-overview";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { useConnection, useReadContract } from "wagmi";
+import { IMerchant } from "@/lib/models/merchants";
+import { Status } from "@/lib/models/chains";
+import { MerchantSettingsView } from "./components/merchant-settings";
+import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
+import { ChainRegistryContractAddress, MerchantContractAddress } from "@/lib/contracts";
+import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function MerchantsPortalPage() {
+  const { address } = useConnection();
+  const { data: merchant, isLoading } = useQuery<IMerchant>({
+    queryKey: ["merchantinformation", address],
+    queryFn: async () =>
+      fetch(`/api/merchant/${address}`).then((res) => res.json()),
+    enabled: !!address,
+  });
+  console.log({ merchant });
+
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8">
       <TabGroup>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 className="text-4xl font-bold tracking-tight items-center inline-flex gap-2">
               Merchant Portal
+              {isLoading ? (
+                <Spinner />
+              ) : <Badge
+                variant={merchant?.status === Status.ACTIVE ? "success" : "destructive"}
+                className="ml-2"
+              >
+                Active
+              </Badge>}
             </h1>
             <p className="text-neutral-500 mt-1">
               Manage your business registry and subscription plans.
@@ -33,7 +60,7 @@ export default function MerchantsPortalPage() {
           <TabList className="flex items-center gap-1 bg-neutral-100 p-1 rounded-2xl">
             {["overview", "plans", "subscriptions", "settings"].map((tab) => (
               <Tab
-              key={tab}
+                key={tab}
                 className={({ selected }) =>
                   cn(
                     "px-6 py-2 rounded-xl text-sm font-bold transition-all capitalize",
@@ -55,7 +82,9 @@ export default function MerchantsPortalPage() {
           </TabPanel>
           <TabPanel>Merchant Plans</TabPanel>
           <TabPanel>Merchant Payouts</TabPanel>
-          <TabPanel>Merchant Settings</TabPanel>
+          <TabPanel>
+            <MerchantSettingsView merchantId={merchant?.id as `0x${string}`} payouts={merchant?.payout || []} />
+          </TabPanel>
         </TabPanels>
       </TabGroup>
     </div>

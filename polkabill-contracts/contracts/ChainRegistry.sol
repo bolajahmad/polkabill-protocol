@@ -35,10 +35,9 @@ contract ChainRegistry is IChainRegistry, Ownable {
      * @param _adapter The deployed BillingAdapter on the chain
      */
     function registerChain(uint256 _cid, address _adapter) external onlyOwner {
-        // if (adapters[_cid].adapter != address(0)) {
-        //     revert ChainExists();
-        // }
-        require(adapters[_cid].adapter == address(0), "CHAIN_EXISTS");
+        if (adapters[_cid].adapter != address(0)) {
+            revert ChainExists();
+        }
 
         adapters[_cid] = Adapter({adapter: _adapter, active: false});
 

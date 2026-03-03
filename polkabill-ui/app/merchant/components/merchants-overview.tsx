@@ -1,11 +1,22 @@
+"use client";
+
 import { StatCard } from "@/components/misc/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { MerchantContractAddress } from "@/lib/contracts";
+import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
 import { MOCK_SUBSCRIPTIONS } from "@/lib/mocks";
 import { formatCurrency } from "@/lib/utils";
 import { Activity, AlertCircle, ArrowUpRight, CreditCard, Plus, Settings, Wallet } from "lucide-react";
+import { useWriteContract } from "wagmi";
 
 export function MerchantsOverview() {
+  const { mutate } = useWriteContract({
+    mutation: {
+      onError: (error) => console.log({ error }),
+      onSuccess: (data) => console.log({ data }),
+    }
+  });
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -55,7 +66,12 @@ export function MerchantsOverview() {
         <Card>
           <CardHeader title="Quick Actions" />
           <div className="p-6 space-y-3">
-            <Button className="w-full justify-start gap-3 rounded-xl">
+            <Button onClick={() => mutate({
+              abi: MerchantContractABI,
+              address: MerchantContractAddress,
+              functionName: "updateController",
+              args: ["0x1de3062E63F7dB84789Ef25E17EC863D14cE67C9"]
+            })} className="w-full justify-start gap-3 rounded-xl">
               <Plus size={18} />
               Create New Plan
             </Button>

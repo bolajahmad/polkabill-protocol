@@ -13,7 +13,7 @@ export function handleChainRegistered(log: any, em: EntityManager) {
     id: chainId.toString(),
     address: billingAdapter,
     tokens: [], // Initialize empty array
-    status: Status.ACTIVE,
+    status: Status.DISABLED,
     createdAt: new Date(),
     updatedAt: new Date(),
   });

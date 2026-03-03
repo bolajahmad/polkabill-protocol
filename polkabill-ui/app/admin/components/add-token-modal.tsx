@@ -3,16 +3,20 @@ import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ChainRegistryContractAddress } from "@/lib/contracts";
 import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
+import { handleContractError } from "@/lib/utils";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useReadContract, useWriteContract } from "wagmi";
 
 type Props = {
   chainId: number;
+  onComplete: () => void
 };
 
-export const UpdateTokenModal = ({ chainId }: Props) => {
+export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
   const [token, setToken] = useState("");
+  console.log({ chainId });
 
   const {
     mutate: updateAdapterTokens,
@@ -21,7 +25,15 @@ export const UpdateTokenModal = ({ chainId }: Props) => {
     data,
   } = useWriteContract({
     mutation: {
-        onMutate: (m) => console.log("Updating supported tokens...", m),
+      onError: (error) => {
+        const message = handleContractError(error);
+        toast.error(message || "Failed to add token");
+        console.log({ error });
+      },
+      onSuccess: () => {
+        toast.success("Token added successfully");
+        onComplete();
+      }
     }
   });
   const {data: chainData} = useReadContract({

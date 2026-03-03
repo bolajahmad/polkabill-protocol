@@ -114,13 +114,11 @@ processor.run(db, async (ctx) => {
   const users: User[] = [];
   em.users.forEach(({ entity }) => users.push(entity));
 
-  await ctx.store.save([
-    ...merchants,
-    ...plans,
-    ...adapters,
-    ...payouts,
-    ...subscriptions,
-    ...charges,
-    ...users,
-  ]);
+  await ctx.store.save(merchants);
+  await ctx.store.save(plans);
+  await ctx.store.save(adapters);
+  await ctx.store.save(payouts);
+  await ctx.store.save(subscriptions);
+  await ctx.store.save(charges);
+  await ctx.store.save(users);
 });
