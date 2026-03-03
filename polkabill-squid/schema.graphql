@@ -1,0 +1,100 @@
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum Status {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+type User @entity {
+  id: ID! @index # User address, always lowerCase
+  subscriptions: [Subscription!]! @derivedFrom(field: "user")
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Merchant @entity {
+  id: ID! @index # Merchant address, always lowerCase
+  payout: [Payout!]! @derivedFrom(field: "merchant") # Payout address, always lowerCase
+  metadataUri: String
+  status: Status!
+  billingWindow: Int! # Billing window in seconds
+  grace: Int! # Grace period in seconds
+  plans: [Plan!]! @derivedFrom(field: "merchant")
+  subscriptions: [Subscription!]! @derivedFrom(field: "merchant")
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Payout @entity {
+  id: ID! # Unique ID, chainId || merchantId
+  merchant: Merchant!
+  chainId: Int!
+  address: String! @index # Payout address, always lowerCase
+  tokens: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Plan @entity {
+  id: ID! @index
+  merchant: Merchant!
+  price: BigInt!
+  billingInterval: Int! # Billing interval in seconds
+  grace: Int! # Grace period in seconds
+  status: Status!
+
+  subscriptions: [Subscription!]! @derivedFrom(field: "plan")
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Adapter @entity {
+  id: ID! @index
+  address: String! @index # Adapter address, always lowerCase
+  tokens: [String!]!
+  status: Status!
+
+  charges: [Charge!]! @derivedFrom(field: "adapter")
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Subscription @entity {
+  id: ID! @index
+  user: User!
+  merchant: Merchant!
+  plan: Plan!
+
+  status: SubscriptionStatus!
+  startTime: BigInt!
+  nextBillingTime: BigInt!
+  billingCycle: BigInt!
+  cancelledAt: BigInt
+
+  charges: [Charge!]! @derivedFrom(field: "subscription")
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Charge @entity {
+  id: ID!
+  subscription: Subscription!
+  adapter: Adapter!
+  amount: BigInt!
+  chainId: Int!
+  token: String! @index
+  payoutAddress: String! @index # User address, always lowerCase
+  billingCycle: BigInt!
+  txHash: String! @index
+  blockNumber: BigInt!
+  success: Boolean!
+  createdAt: DateTime!
+}

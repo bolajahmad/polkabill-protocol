@@ -28,6 +28,4 @@ interface IChainRegistry {
     function isValidAdapter(uint256 chainId, address adapter) external view returns (bool);
 
     function isTokenSupported(uint256 chainId, address token) external view returns (bool);
-
-    function approvedAdapterCodeHash() external view returns (bytes32);
 }

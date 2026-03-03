@@ -98,7 +98,7 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
     }
 
     function relayChargeRequest(uint256 _chain, address _adapter, bytes memory _body, bool _native) external {
-        require(msg.sender == address(chainRegistry), "Unauthorized call!");
+        require(msg.sender == address(subManager), "Unauthorized call!");
         bytes memory dest = _native ? StateMachine.polkadot(_chain) : StateMachine.evm(_chain);
         DispatchPost memory post = DispatchPost({
             body: abi.encode(1, _body),
@@ -114,7 +114,7 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
     }
 
     function relayMerchantProfileUpdate(uint256 _chain, address _adapter, bytes memory _body) external {
-        require(msg.sender == address(chainRegistry), "Unauthorized call!");
+        require(msg.sender == address(merchantRegistry), "Unauthorized call!");
         bytes memory dest = StateMachine.evm(_chain);
         DispatchPost memory post = DispatchPost({
             body: abi.encode(2, _body),

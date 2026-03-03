@@ -18,13 +18,9 @@ contract ChainRegistry is IChainRegistry, Ownable {
     mapping(uint256 => Adapter) adapters;
     mapping(uint256 => mapping(address => bool)) private tokenSupport;
 
-    bytes32 private immutable adapterCodeHash;
     ISubscriptionsController private subsController;
 
-    constructor(bytes32 _hash, address _controller) Ownable(msg.sender) {
-        adapterCodeHash = _hash;
-        subsController = ISubscriptionsController(_controller);
-    }
+    constructor() Ownable(msg.sender) {}
 
     /**
      * This registers a new chain.
@@ -41,9 +37,6 @@ contract ChainRegistry is IChainRegistry, Ownable {
     function registerChain(uint256 _cid, address _adapter) external onlyOwner {
         if (adapters[_cid].adapter != address(0)) {
             revert ChainExists();
-        }
-        if (keccak256(_adapter.code) != adapterCodeHash) {
-            revert InvalidAdapterCode();
         }
 
         adapters[_cid] = Adapter({adapter: _adapter, active: false});
@@ -93,9 +86,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
             revert UnregisteredChain();
         }
 
-        // check that token does not exist already
-        // Only register Token, if it doesn't exist already
-        tokenSupport[_cid][_token] = false;
+        tokenSupport[_cid][_token] = _support;
         emit TokenSupportUpdated(_cid, _token, _support);
         bytes memory body = abi.encode(_cid, _token, _support);
 
@@ -129,10 +120,6 @@ contract ChainRegistry is IChainRegistry, Ownable {
     ) external view returns (bool) {
         bool registered = tokenRegisteredToChain(_cid, _token);
         return registered;
-    }
-
-    function approvedAdapterCodeHash() external view returns (bytes32) {
-        return adapterCodeHash;
     }
 
     function tokenRegisteredToChain(

@@ -33,7 +33,7 @@ interface ISubscriptionManager {
 
     function confirmPayment(uint256 subscriptionId, uint256 billingCycle) external view returns (bool);
 
-    function isChargeAllowed(uint256 subscriptionId) external view returns (bool);
+    // function isChargeAllowed(uint256 subscriptionId) external view returns (bool);
 
     function isChargeAllowedMut(uint256 subscriptionId) external returns (bool);
 
@@ -42,4 +42,6 @@ interface ISubscriptionManager {
     function getSubscription(uint256 subscriptionId) external view returns (Subscription memory);
 
     function confirmCharge(uint256 subId, uint256 cycle) external;
+    
+    function requestCharge(uint256 subId, uint256 chainId, address token) external;
 }
