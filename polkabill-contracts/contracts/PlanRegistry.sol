@@ -47,6 +47,7 @@ contract PlanRegistry is IPlanRegistry {
 
         nextPlanId += 1;
         emit PlanCreated(_pid, msg.sender, _price, _metadata);
+        emit PlanUpdated(_pid, _price, _grace, true);
     }
 
     function updatePlan(uint256 _pid, uint256 _price, uint256 _grace) external {

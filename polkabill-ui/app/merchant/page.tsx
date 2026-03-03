@@ -23,9 +23,13 @@ import { IMerchant } from "@/lib/models/merchants";
 import { Status } from "@/lib/models/chains";
 import { MerchantSettingsView } from "./components/merchant-settings";
 import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
-import { ChainRegistryContractAddress, MerchantContractAddress } from "@/lib/contracts";
+import {
+  ChainRegistryContractAddress,
+  MerchantContractAddress,
+} from "@/lib/contracts";
 import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
 import { Spinner } from "@/components/ui/spinner";
+import { MerchantPlansView } from "./components/merchant-plans-view";
 
 export default function MerchantsPortalPage() {
   const { address } = useConnection();
@@ -46,12 +50,18 @@ export default function MerchantsPortalPage() {
               Merchant Portal
               {isLoading ? (
                 <Spinner />
-              ) : <Badge
-                variant={merchant?.status === Status.ACTIVE ? "success" : "destructive"}
-                className="ml-2"
-              >
-                Active
-              </Badge>}
+              ) : (
+                <Badge
+                  variant={
+                    merchant?.status === Status.ACTIVE
+                      ? "success"
+                      : "destructive"
+                  }
+                  className="ml-2"
+                >
+                  Active
+                </Badge>
+              )}
             </h1>
             <p className="text-neutral-500 mt-1">
               Manage your business registry and subscription plans.
@@ -80,10 +90,19 @@ export default function MerchantsPortalPage() {
           <TabPanel>
             <MerchantsOverview />
           </TabPanel>
-          <TabPanel>Merchant Plans</TabPanel>
+          <TabPanel>
+            <MerchantPlansView
+              mid={merchant?.id as `0x${string}`}
+              window={merchant?.billingWindow || 0}
+              plans={merchant?.plans || []}
+            />
+          </TabPanel>
           <TabPanel>Merchant Payouts</TabPanel>
           <TabPanel>
-            <MerchantSettingsView merchantId={merchant?.id as `0x${string}`} payouts={merchant?.payout || []} />
+            <MerchantSettingsView
+              merchantId={merchant?.id as `0x${string}`}
+              payouts={merchant?.payout || []}
+            />
           </TabPanel>
         </TabPanels>
       </TabGroup>

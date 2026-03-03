@@ -22,6 +22,11 @@ export const GET_MERCHANT_BY_ID = gql`
         billingInterval
         grace
         status
+        createdAt
+        updatedAt
+        subscriptions {
+        id
+        }
       }
     }
   }

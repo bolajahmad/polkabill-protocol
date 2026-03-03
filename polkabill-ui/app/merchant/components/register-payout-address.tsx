@@ -152,12 +152,12 @@ export const RegisterMerchantPayoutAddress = ({
           name="adapter"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="form-rhf-complex-company">
+              <FieldLabel htmlFor="form-rhf-input-adapter">
                 Payout Address
               </FieldLabel>
               <Input
                 {...field}
-                id="form-rhf-input-chainId"
+                id="form-rhf-input-adapter"
                 aria-invalid={fieldState.invalid}
                 placeholder="0x0000"
               />
