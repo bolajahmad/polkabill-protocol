@@ -1,0 +1,43 @@
+{
+  "name": "polkabill",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "version": "1.0.0",
+  "description": "Polkabill is a cross-chain stablecoin-based subscription protocol, that is built off the Polkadot ecosystem. It enables `MERCHANTS` to create on-chain subscription products and automatically charge subscribers across chains and is powered by Hyperbridge messaging.",
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint -- --fix",
+    "dev": "pnpm --parallel --filter ./packages/** dev --filter ./apps/** dev",
+    "build": "pnpm -r build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bolajahmad/polkabill-protocol.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bolajahmad/polkabill-protocol/issues"
+  },
+  "homepage": "https://github.com/bolajahmad/polkabill-protocol#readme",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "viem": "2.47.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.3",
+      "react-dom": "19.2.3",
+      "viem": "2.47.0"
+    }
+  }
+}

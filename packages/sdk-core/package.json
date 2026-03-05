@@ -1,0 +1,18 @@
+{
+  "name": "@polkabill/sdk-core",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch"
+  },
+  "dependencies": {
+    "zod": "^4.3.6",
+    "@polkabill/sdk-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  }
+}
