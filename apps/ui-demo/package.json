@@ -12,6 +12,7 @@
   "dependencies": {
     "@polkabill/react": "workspace:*",
     "@polkabill/sdk-core": "workspace:*",
+    "@tanstack/react-query": "^5.90.21",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "wagmi": "^3.5.0"

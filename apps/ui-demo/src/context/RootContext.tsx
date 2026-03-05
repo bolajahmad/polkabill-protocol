@@ -1,26 +1,38 @@
-import { PolkabillProvider } from "@polkabill/react";
-import { PolkabillClient } from "@polkabill/sdk-core";
-import { useMemo, type ReactNode } from "react";
-import { createPublicClient, http } from "viem";
-import { useConnection } from "wagmi";
+import { PolkabillProvider } from '@polkabill/react';
+import { PolkabillClient } from '@polkabill/sdk-core';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { baseSepolia } from 'viem/chains';
+import { useChains, useConnection, usePublicClient, useSwitchChain, useWalletClient } from 'wagmi';
 
 export const RootContext = ({ children }: { children: ReactNode }) => {
   const { chain } = useConnection();
-  
-  const client = useMemo(() => {
-    return createPublicClient({
-      chain,
-      transport: http("https://base-sepolia.gateway.tenderly.co"),
-    });
-  }, [chain]);
+  const { mutate: switchChain } = useSwitchChain();
+  const chains = useChains();
+  const pubClient = usePublicClient();
+  const {
+    data: walletClient,
+  } = useWalletClient({
+    chainId: chain?.id,
+  });
 
+  // Only create PolkabillClient when walletClient is ready
   const polkabill = useMemo(() => {
-    return new PolkabillClient({ publicClient: client as any });
-  }, [client]); 
+    if (!walletClient) return null; // not ready yet
+    return new PolkabillClient({
+      publicClient: pubClient as any,
+      walletClient,
+    });
+  }, [pubClient, walletClient]);
 
-  return (
-    <PolkabillProvider client={{ polkabill}}>
-      {children}
-    </PolkabillProvider>
-  );
+  // Auto-switch chain if no chain selected
+  useEffect(() => {
+    if (!chain) {
+      switchChain({ chainId: chains.find(c => c.id === baseSepolia.id)?.id || 84532 });
+    }
+  }, [chain, chains, switchChain]);
+
+  // Don't render children until PolkabillClient is ready
+  if (!polkabill) return <div>Connecting wallet...</div>;
+
+  return <PolkabillProvider client={polkabill}>{children}</PolkabillProvider>;
 };

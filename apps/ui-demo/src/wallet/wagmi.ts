@@ -1,27 +1,22 @@
 import {
-    cookieStorage,
-    createConfig,
-    createStorage,
-    fallback,
-    http,
-    injected,
-    webSocket,
+  cookieStorage,
+  createConfig,
+  createStorage,
+  fallback,
+  http,
+  injected,
+  webSocket,
 } from "wagmi";
 import { base, baseSepolia, mainnet, polygon, polygonAmoy, sepolia } from "wagmi/chains";
 
+// Your custom chains
 export const passetHub = {
   id: 420_420_417,
   name: "AssetHub (Paseo)",
   network: "Polkadot Hub Testnet",
-  nativeCurrency: {
-    decimals: 10,
-    name: "Paseo",
-    symbol: "PAS",
-  },
+  nativeCurrency: { decimals: 10, name: "Paseo", symbol: "PAS" },
   rpcUrls: {
     default: {
-      // http: ['https://eth-rpc-testnet.polkadot.io/', 'https://testnet-passet-hub-eth-rpc.polkadot.io'],
-      // http: ["https://services.polkadothub-rpc.com/testnet"],
       http: ["https://services.polkadothub-rpc.com/testnet"],
     },
   },
@@ -31,51 +26,57 @@ export const assetHub = {
   id: 420_420_419,
   name: "AssetHub",
   network: "Polkadot Asset Hub",
-  nativeCurrency: {
-    decimals: 10,
-    name: "DOT",
-    symbol: "DOT",
-  },
+  nativeCurrency: { decimals: 10, name: "DOT", symbol: "DOT" },
   rpcUrls: {
-    default: {
-      http: ["https://eth-rpc.polkadot.io/"],
-    },
-    public: {
-      http: ["https://asset-hub-eth-rpc.polkadot.io"],
-    },
+    default: { http: ["https://eth-rpc.polkadot.io/"] },
+    public: { http: ["https://asset-hub-eth-rpc.polkadot.io"] },
   },
   blockExplorers: {
-    default: {
-      name: "Subscan",
-      url: "https://assethub-polkadot.subscan.io",
-    },
+    default: { name: "Subscan", url: "https://assethub-polkadot.subscan.io" },
   },
 } as const;
 
+// WAGMI config with multi-RPC fallbacks
 export function getConfig() {
   return createConfig({
-    chains: [passetHub, mainnet, sepolia, baseSepolia, base, polygonAmoy, polygon, assetHub],
-    storage: createStorage({
-      storage: cookieStorage,
-    }),
+    storage: createStorage({ storage: cookieStorage }),
     ssr: true,
-    connectors: [injected()],
+    connectors: [injected()], // MetaMask, etc.
+    chains: [
+      baseSepolia,
+      passetHub,
+      assetHub,
+      sepolia,
+      mainnet,
+      base,
+      polygon,
+      polygonAmoy,
+    ],
+    // Multi-RPC fallback transports
     transports: {
+      [baseSepolia.id]: fallback([
+        webSocket("wss://base-sepolia-rpc.publicnode.com"),
+        http("https://rpc.sepolia.org"),
+        http("https://base-sepolia.rpc.thirdweb.com"),
+      ]),
       [passetHub.id]: fallback([
         webSocket("wss://services.polkadothub-rpc.com/testnet"),
         http("https://services.polkadothub-rpc.com/testnet"),
       ]),
-      [mainnet.id]: http(),
+      [assetHub.id]: fallback([
+        http("https://asset-hub-eth-rpc.polkadot.io"),
+        http("https://eth-rpc.polkadot.io/"),
+      ]),
       [sepolia.id]: http(),
+      [mainnet.id]: http(),
       [base.id]: http(),
-      [baseSepolia.id]: http(),
       [polygon.id]: http(),
-      [ polygonAmoy.id]: http(),
-      [assetHub.id]: http(),
+      [polygonAmoy.id]: http(),
     },
   });
 }
 
+// Optional: TypeScript helper to extend WAGMI types
 declare module "wagmi" {
   interface Register {
     config: ReturnType<typeof getConfig>;

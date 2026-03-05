@@ -7,13 +7,14 @@ export function SubscribeButton({
 }: any) {
     const pb = usePolkabill();
     const { address } = useAccount();
-    console.log({ address });
 
     async function handleSubscribe() {
         if (!address) {
             alert("Connect wallet");
             return;
         }
+
+        console.log("Calling config");
 
         await pb.subscribe({
             merchant: merchantId,

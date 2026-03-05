@@ -1,8 +1,7 @@
+import { baseSepolia } from "viem/chains";
 import { SubscriptionManagerContractAddress } from "../contracts";
 import { SubscriptionManagerContractABI } from "../contracts/abi/subscription-manager.abi";
 import { PolkabillConfig, SubscribeParams } from "../types";
-import { baseSepolia } from "viem/chains";
-import { passetHub } from "../utils/wallets";
 
 export async function subscribe(
     config: PolkabillConfig,
@@ -14,6 +13,7 @@ export async function subscribe(
 
     const { walletClient } = config;
     const [account] = await walletClient.getAddresses();
+    console.log({ account, config, chain: baseSepolia });
 
     return walletClient.writeContract({
         account,
