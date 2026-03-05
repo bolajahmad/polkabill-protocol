@@ -1,10 +1,15 @@
-import { SubscribeButton } from "@polkabill/react";
-import { useConnection } from "wagmi";
-import "./App.css";
+import { SubscribeButton } from '@polkabill/react';
+import { useBalance, useConnection } from 'wagmi';
+import './App.css';
 
 function App() {
-  const { isConnected, address } = useConnection();
-  
+  const { address , chain} = useConnection();
+  const { data } = useBalance({
+    chainId: chain?.id,
+    address,
+  });
+  console.log({ address, chain, data });
+
   return (
     <div>
       <h1>Polkabill SDK Demo (By User)</h1>

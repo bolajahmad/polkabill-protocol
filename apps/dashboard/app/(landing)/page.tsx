@@ -1,23 +1,20 @@
 "use client";
 
-import { ComponentExample } from "@/components/component-example";
 import { FeatureCard, RoleCard } from "@/components/misc/stat-card";
 import { Button } from "@/components/ui/button";
+import { useCheckIsMerchantProfile } from "@/lib/hooks/use-check-account";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Building2,
   CreditCard,
   Globe,
   Loader2,
   ShieldCheck,
-  UserPlus,
-  Zap,
+  Zap
 } from "lucide-react";
+import Link from "next/link";
 import { useConnection } from "wagmi";
 import { RegisterMerchantModal } from "./(components)/register-merchant";
-import { useCheckIsMerchantProfile } from "@/lib/hooks/use-check-account";
-import Link from "next/link";
 
 export default function LandingPage() {
   const { isConnected, address, isConnecting } = useConnection();
@@ -29,7 +26,7 @@ export default function LandingPage() {
     console.log({ role });
   };
   return (
-    <div className="min-h-[calc(100vh-64px)] flex flex-col">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col p-6 md:p-12">
       {/* Hero Section */}
       <section className="py-20 px-6 text-center max-w-4xl mx-auto space-y-8">
         <motion.div

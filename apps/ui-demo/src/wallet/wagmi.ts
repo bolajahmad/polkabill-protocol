@@ -55,9 +55,10 @@ export function getConfig() {
     // Multi-RPC fallback transports
     transports: {
       [baseSepolia.id]: fallback([
-        webSocket("wss://base-sepolia-rpc.publicnode.com"),
+        http("https://base-sepolia.g.alchemy.com/v2/FPg_srMCXrb0pwXZnO6_J"),
         http("https://rpc.sepolia.org"),
         http("https://base-sepolia.rpc.thirdweb.com"),
+        webSocket("wss://base-sepolia-rpc.publicnode.com"),
       ]),
       [passetHub.id]: fallback([
         webSocket("wss://services.polkadothub-rpc.com/testnet"),

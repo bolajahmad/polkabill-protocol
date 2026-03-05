@@ -1,6 +1,6 @@
-import { EntityManager } from "../utils/entity-manager";
 import * as subManagerAbi from "../abi/subscriptions-manager";
 import { Subscription, SubscriptionStatus, User } from "../model";
+import { EntityManager } from "../utils/entity-manager";
 
 const SubStatusMap = {
   0: SubscriptionStatus.INACTIVE,
@@ -13,17 +13,20 @@ const SubStatusMap = {
 export function handleUserSubscribed(log: any, em: EntityManager) {
   const { planId, subId, subscriber } =
     subManagerAbi.events.Subscribed.decode(log);
-  
-  // Skip if subscription already exists
-  if (em.getSubscription(subId.toString())) return;
+
+  const id = subId.toString();
+
+  if (em.getSubscription(id)) return;
 
   const plan = em.getPlan(planId.toString());
-  if (!plan) return;
+  if (!plan) {
+    console.error("Plan missing for subscription", planId.toString());
+    return;
+  }
 
-  const now = Math.floor(Date.now() / 1000);
+  const now = BigInt(log.block.timestamp);
   const userId = subscriber.toLowerCase();
 
-  // Get or create user
   let user = em.getUser(userId);
   if (!user) {
     user = new User({
@@ -35,14 +38,14 @@ export function handleUserSubscribed(log: any, em: EntityManager) {
   }
 
   const sub = new Subscription({
-    id: subId.toString(),
-    plan,                              // FK → Plan
-    merchant: plan.merchant,           // FK → Merchant
-    user,                              // FK → User
+    id,
+    plan,
+    merchant: plan.merchant,
+    user,
     status: SubscriptionStatus.ACTIVE,
-    startTime: BigInt(now),
-    nextBillingTime: BigInt(now + plan.billingInterval),
-    billingCycle: 1n,                  // First billing cycle
+    startTime: now,
+    nextBillingTime: now + BigInt(plan.billingInterval),
+    billingCycle: 1n,
     cancelledAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),

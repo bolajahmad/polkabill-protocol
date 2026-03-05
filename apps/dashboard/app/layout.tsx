@@ -1,23 +1,22 @@
-"use client";
+'use client';
 
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google";
-import "./globals.css";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getConfig } from "@/lib/wallet/config";
-import { Navbar } from "@/components/layout/navbar";
+import { Navbar } from '@/components/layout/navbar';
+import { getConfig } from '@/lib/wallet/config';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Geist, Geist_Mono, Nunito_Sans } from 'next/font/google';
+import { WagmiProvider } from 'wagmi';
+import './globals.css';
 
-const nunitoSans = Nunito_Sans({ variable: "--font-sans" });
+const nunitoSans = Nunito_Sans({ variable: '--font-sans' });
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 // export const metadata: Metadata = {
@@ -36,11 +35,10 @@ export default function RootLayout({
     <WagmiProvider config={getConfig()}>
       <QueryClientProvider client={queryClient}>
         <html lang="en" className={nunitoSans.variable}>
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          >
+          <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
             <Navbar />
-            {children}
+
+            <main className="pb-20">{children}</main>
           </body>
         </html>
       </QueryClientProvider>

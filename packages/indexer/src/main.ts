@@ -1,28 +1,16 @@
 // TypeormDatabase is the class responsible for data storage.
 import { TypeormDatabase } from "@subsquid/typeorm-store";
-import { makeProcessor } from "./processor";
-import { Contracts, networkConfig } from "./utils/network-config";
-import {
-  Adapter,
-  Charge,
-  Merchant,
-  Payout,
-  Plan,
-  Status,
-  Subscription,
-  User,
-} from "./model";
-import * as subManagerAbi from "./abi/subscriptions-manager";
+import * as chainRegAbi from "./abi/chain-registry";
 import * as merchantRegAbi from "./abi/merchant-registry";
 import * as planRegAbi from "./abi/plan-registry";
-import * as chainRegAbi from "./abi/chain-registry";
 import * as subControllerAbi from "./abi/subscriptions-controller";
-import { StoreContext } from "./utils/helpers";
-import { encodePacked, keccak256, zeroAddress } from "viem";
-import { BatchCache } from "./utils/batch-cache";
-import { EntityManager } from "./utils/entity-manager";
-import { collectIds } from "./utils/collect-ids";
-import { preloadEntities } from "./utils/preload";
+import * as subManagerAbi from "./abi/subscriptions-manager";
+import {
+  handleChainRegistered,
+  handleChainStatusUpdated,
+  handleUpdateSupportedChainTokens,
+} from "./handlers/adapter.handler";
+import { handleChargeConfirmed, handleChargeRequestRelayed } from "./handlers/charge.handler";
 import {
   handleMerchantStatusUpdated,
   handleMerchantUpdated,
@@ -31,16 +19,25 @@ import {
 } from "./handlers/merchant.handler";
 import { handleCreatePlan, handlePlanUpdated } from "./handlers/plan.handler";
 import {
-  handleChainRegistered,
-  handleChainStatusUpdated,
-  handleUpdateSupportedChainTokens,
-} from "./handlers/adapter.handler";
-import {
   handleSubscriptionPaid,
   handleSubscriptionUpdated,
   handleUserSubscribed,
 } from "./handlers/subscriptions.handler";
-import { handleChargeConfirmed, handleChargeRequestRelayed } from "./handlers/charge.handler";
+import {
+  Adapter,
+  Charge,
+  Merchant,
+  Payout,
+  Plan,
+  Subscription,
+  User
+} from "./model";
+import { makeProcessor } from "./processor";
+import { BatchCache } from "./utils/batch-cache";
+import { collectIds } from "./utils/collect-ids";
+import { EntityManager } from "./utils/entity-manager";
+import { networkConfig } from "./utils/network-config";
+import { preloadEntities } from "./utils/preload";
 
 async function processLog(log: any, store: EntityManager) {
   if (log.topics[0] == merchantRegAbi.events.MerchantUpdated.topic) {
@@ -114,11 +111,11 @@ processor.run(db, async (ctx) => {
   const users: User[] = [];
   em.users.forEach(({ entity }) => users.push(entity));
 
-  await ctx.store.save(merchants);
-  await ctx.store.save(plans);
   await ctx.store.save(adapters);
+  await ctx.store.save(merchants);
   await ctx.store.save(payouts);
+  await ctx.store.save(plans);
+  await ctx.store.save(users);
   await ctx.store.save(subscriptions);
   await ctx.store.save(charges);
-  await ctx.store.save(users);
 });

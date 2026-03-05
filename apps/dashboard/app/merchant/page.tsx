@@ -1,35 +1,17 @@
 "use client";
 
-import { StatCard } from "@/components/misc/stat-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { MOCK_SUBSCRIPTIONS } from "@/lib/mocks";
-import { cn, formatCurrency } from "@/lib/utils";
-import {
-  Activity,
-  AlertCircle,
-  ArrowUpRight,
-  CreditCard,
-  Plus,
-  Settings,
-  Wallet,
-} from "lucide-react";
-import { MerchantsOverview } from "./components/merchants-overview";
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { useConnection, useReadContract } from "wagmi";
-import { IMerchant } from "@/lib/models/merchants";
-import { Status } from "@/lib/models/chains";
-import { MerchantSettingsView } from "./components/merchant-settings";
-import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
-import {
-  ChainRegistryContractAddress,
-  MerchantContractAddress,
-} from "@/lib/contracts";
-import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
 import { Spinner } from "@/components/ui/spinner";
+import { Status } from "@/lib/models/chains";
+import { IMerchant } from "@/lib/models/merchants";
+import { cn } from "@/lib/utils";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import { useQuery } from "@tanstack/react-query";
+import { useConnection } from "wagmi";
 import { MerchantPlansView } from "./components/merchant-plans-view";
+import { MerchantSettingsView } from "./components/merchant-settings";
+import { MerchantSubscriptions } from "./components/merchant-subscriptions";
+import { MerchantsOverview } from "./components/merchants-overview";
 
 export default function MerchantsPortalPage() {
   const { address } = useConnection();
@@ -42,7 +24,7 @@ export default function MerchantsPortalPage() {
   console.log({ merchant });
 
   return (
-    <div className="max-w-7xl mx-auto w-full space-y-8">
+    <div className="max-w-7xl mx-auto w-full space-y-8 p-6 md:p-12">
       <TabGroup>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -97,7 +79,9 @@ export default function MerchantsPortalPage() {
               plans={merchant?.plans || []}
             />
           </TabPanel>
-          <TabPanel>Merchant Payouts</TabPanel>
+          <TabPanel>
+            <MerchantSubscriptions mid={merchant?.id as `0x${string}`} />
+          </TabPanel>
           <TabPanel>
             <MerchantSettingsView
               merchantId={merchant?.id as `0x${string}`}
