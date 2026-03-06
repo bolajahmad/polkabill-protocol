@@ -1,115 +1,113 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { MOCK_PLANS } from "@/lib/mocks";
-import { formatCurrency, handleContractError } from "@/lib/utils";
-import { Plus } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useWriteContract } from "wagmi";
-import {
-  Dialog,
-  DialogPanel,
-  DialogBackdrop,
-  DialogTitle,
-} from "@headlessui/react";
-import { Input } from "@/components/ui/input";
-import { PlanRegistryContractABI } from "@/lib/contracts/abi/plan-registry.abi";
-import { PlanRegistryContractAddress } from "@/lib/contracts";
-import { formatUnits, hexToString, parseUnits, stringToHex } from "viem";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupText,
   InputGroupTextarea,
-} from "@/components/ui/input-group";
-import { FieldDescription } from "@base-ui/react";
-import { Spinner } from "@/components/ui/spinner";
-import { toast } from "sonner";
-import { IMerchant } from "@/lib/models/merchants";
+} from '@/components/ui/input-group';
+import { Spinner } from '@/components/ui/spinner';
+import { PlanRegistryContractAddress } from '@/lib/contracts';
+import { PlanRegistryContractABI } from '@/lib/contracts/abi/plan-registry.abi';
+import { IMerchant } from '@/lib/models/merchants';
+import { formatCurrency, handleContractError } from '@/lib/utils';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { formatUnits, stringToHex } from 'viem';
+import { useWriteContract } from 'wagmi';
+import z from 'zod';
 
 const createPlanSchema = (window: number) =>
   z.object({
     name: z
       .string()
-      .min(1, "Plan name is required")
-      .max(100, "Plan name must be less than 100 characters"),
+      .min(1, 'Plan name is required')
+      .max(100, 'Plan name must be less than 100 characters'),
     description: z
       .string()
-      .min(1, "Description is required")
-      .max(1000, "Description must be less than 1000 characters"),
+      .min(1, 'Description is required')
+      .max(1000, 'Description must be less than 1000 characters'),
     price: z
       .string()
-      .min(1, "Price is required")
+      .min(1, 'Price is required')
       .refine(
-        (val) => !isNaN(Number(val)) && Number(val) > 0,
-        "Price must be a valid positive number",
+        val => !isNaN(Number(val)) && Number(val) > 0,
+        'Price must be a valid positive number',
       ),
     interval: z
       .string()
-      .min(1, "Interval is required")
+      .min(1, 'Interval is required')
       .refine(
-        (val) => !isNaN(Number(val)) && Number(val) > 0,
-        "Interval must be a valid positive number",
+        val => !isNaN(Number(val)) && Number(val) > 0,
+        'Interval must be a valid positive number',
       )
-      .refine(
-        (val) => Number(val) >= window,
-        "Interval must be at least the merchant window period",
-      ),
+      .refine(val => Number(val) >= window, 'Interval must be at least the merchant window period'),
     grace: z
       .string()
       .optional()
       .refine(
-        (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-        "Grace period must be a valid non-negative number",
+        val => !val || (!isNaN(Number(val)) && Number(val) >= 0),
+        'Grace period must be a valid non-negative number',
       ),
   });
 
 type Props = {
   mid: `0x${string}`;
   window: number;
-  plans: IMerchant["plans"];
+  plans: IMerchant['plans'];
 };
 
 export const MerchantPlansView = ({ mid, plans, window }: Props) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { mutate, isPending } = useWriteContract({
     mutation: {
-      onError: (error) => {
+      onError: error => {
         const msg = handleContractError(error);
-        toast.error(msg || "Failed to create plan");
+        toast.error(msg || 'Failed to create plan');
         console.log({ error });
       },
       onSuccess: () => {
-        toast.success("Plan created successfully");
+        toast.success('Plan created successfully');
         setIsModalOpen(false);
       },
     },
   });
   const schema = useMemo(() => createPlanSchema(window), [window]);
+  const { mutateAsync: generateIpfsCid, isPending: generatingHash } = useMutation({
+    mutationKey: ['create-metadata-hash'],
+    mutationFn: async (data: any) =>
+      fetch('/api/generate-ipfs-cid', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          version: '1.0.0',
+        }),
+      }).then(res => res.json()),
+  });
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: "",
-      price: "",
-      interval: "",
-      grace: "",
-      description: "",
+      name: '',
+      price: '',
+      interval: '',
+      grace: '',
+      description: '',
     },
   });
 
-  const onSubmit = (data: Record<string, string>) => {
-    console.log("Form data:", data);
+  const onSubmit = async (data: Record<string, string>) => {
+    console.log('Form data:', data);
     // Call mutate to submit to blockchain
 
     if (!data.name || !data.price) return;
@@ -119,15 +117,17 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
       description: data.description,
     });
 
+    const cid = await generateIpfsCid(metadata);
+
     mutate({
       abi: PlanRegistryContractABI,
       address: PlanRegistryContractAddress,
-      functionName: "createPlan",
+      functionName: 'createPlan',
       args: [
         BigInt(Math.floor(Number(data.price) * 10 ** 18)), // Assumes 18 decimals for stablecoins
         BigInt(data.interval),
         BigInt(data.grace),
-        stringToHex(metadata),
+        stringToHex(cid.hash),
       ],
     });
   };
@@ -136,26 +136,21 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Subscription Plans</h2>
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="gap-2 rounded-xl"
-        >
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2 rounded-xl">
           <Plus size={18} />
           New Plan
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans.map((plan) => (
+        {plans.map(plan => (
           <Card key={plan.id} className="flex flex-col h-full">
             <div className="p-6 flex-1 space-y-4">
               <div className="flex justify-between items-start">
-                <Badge variant={plan.status ? "success" : "destructive"}>
-                  {plan.status ? "Active" : "Paused"}
+                <Badge variant={plan.status ? 'success' : 'destructive'}>
+                  {plan.status ? 'Active' : 'Paused'}
                 </Badge>
-                <span className="text-[10px] font-mono text-neutral-400">
-                  ID: #{plan.id}
-                </span>
+                <span className="text-[10px] font-mono text-neutral-400">ID: #{plan.id}</span>
               </div>
               <div>
                 <h3 className="text-xl font-bold">Basic</h3>
@@ -163,28 +158,17 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-bold">
-                  {formatCurrency(
-                    Number(formatUnits(BigInt(plan.price), 18)),
-                  )}{" "}
-                  USD
+                  {formatCurrency(Number(formatUnits(BigInt(plan.price), 18)))} USD
                 </span>
-                <span className="text-neutral-400 text-sm">
-                  /{plan.billingInterval} days
-                </span>
+                <span className="text-neutral-400 text-sm">/{plan.billingInterval} days</span>
               </div>
               <div className="grid grid-cols-2 gap-4 py-4 border-y border-neutral-50">
                 <div>
-                  <p className="text-[10px] uppercase text-neutral-400 font-bold">
-                    Subscribers
-                  </p>
-                  <p className="text-lg font-bold">
-                    {plan.subscriptions.length ?? "0"}
-                  </p>
+                  <p className="text-[10px] uppercase text-neutral-400 font-bold">Subscribers</p>
+                  <p className="text-lg font-bold">{plan.subscriptions.length ?? '0'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase text-neutral-400 font-bold">
-                    Grace Period
-                  </p>
+                  <p className="text-[10px] uppercase text-neutral-400 font-bold">Grace Period</p>
                   <p className="text-lg font-bold">{plan.grace} days</p>
                 </div>
               </div>
@@ -201,17 +185,11 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         ))}
       </div>
 
-      <Dialog
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        className="relative z-50"
-      >
+      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} className="relative z-50">
         <DialogBackdrop className="fixed inset-0 bg-black/50" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel className="bg-white rounded-lg shadow-lg max-w-md w-full space-y-4 p-6">
-            <DialogTitle className="text-lg font-bold">
-              Create Subscription Plan
-            </DialogTitle>
+            <DialogTitle className="text-lg font-bold">Create Subscription Plan</DialogTitle>
 
             <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
               <FieldGroup>
@@ -220,18 +198,14 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                   name="name"
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="form-rhf-input-name">
-                        Plan Name
-                      </FieldLabel>
+                      <FieldLabel htmlFor="form-rhf-input-name">Plan Name</FieldLabel>
                       <Input
                         {...field}
                         id="form-rhf-input-name"
                         aria-invalid={fieldState.invalid}
                         placeholder="Provide plan name"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -259,9 +233,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                           </InputGroupText>
                         </InputGroupAddon>
                       </InputGroup>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -271,9 +243,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                   name="price"
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="form-rhf-input-price">
-                        Price (USD)
-                      </FieldLabel>
+                      <FieldLabel htmlFor="form-rhf-input-price">Price (USD)</FieldLabel>
                       <Input
                         {...field}
                         type="number"
@@ -281,9 +251,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                         aria-invalid={fieldState.invalid}
                         placeholder="0.0"
                       />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -294,9 +262,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                   render={({ field, fieldState }) => {
                     return (
                       <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-rhf-input-interval">
-                          Plan Duration
-                        </FieldLabel>
+                        <FieldLabel htmlFor="form-rhf-input-interval">Plan Duration</FieldLabel>
                         <Input
                           {...field}
                           type="number"
@@ -304,9 +270,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                           aria-invalid={fieldState.invalid}
                           placeholder="0"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     );
                   }}
@@ -328,9 +292,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                           aria-invalid={fieldState.invalid}
                           placeholder="0"
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     );
                   }}

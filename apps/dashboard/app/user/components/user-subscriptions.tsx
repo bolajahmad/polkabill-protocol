@@ -66,9 +66,11 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
 
     return { adapter, token };
   }, [paymentChain, paymentToken]);
-
+  
   const payForSubscription = () => {
     if (!selectedSub || !adapter || !token) return;
+
+    if (chain?.id !== baseSepolia.id) return;
 
     writeContract(
       {
@@ -76,6 +78,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
         address: SubscriptionManagerContractAddress,
         functionName: 'requestCharge',
         args: [BigInt(selectedSub.id), BigInt(adapter.id), token.address as `0x${string}`],
+        chain: chain!
       },
       {
         onSuccess: () => {

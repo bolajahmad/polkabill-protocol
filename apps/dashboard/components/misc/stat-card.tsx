@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
-import { Card } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { CheckCircle2 } from "lucide-react";
+import { ReactNode } from "react";
 import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 
 type Props = {
     label: ReactNode;
@@ -54,7 +54,7 @@ export const RoleCard = ({ title, description, onClick, features, disabled }: an
       onClick={disabled ? undefined : onClick} 
       className={cn(
         "w-full rounded-xl transition-colors",
-        !disabled && "group-hover:bg-black group-hover:text-white"
+        !disabled && "group-hover:bg-gray-100 hover:bg-black hover:text-white"
       )}
     >
       Enter Portal

@@ -13,17 +13,20 @@ import {
   Zap
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useConnection } from "wagmi";
 import { RegisterMerchantModal } from "./(components)/register-merchant";
 
 export default function LandingPage() {
-  const { isConnected, address, isConnecting } = useConnection();
+  const { isConnected, address, isConnecting, chain } = useConnection();
   const { hasMerchant, isLoading, merchant } = useCheckIsMerchantProfile(
     address!,
   );
+  const router = useRouter();
+  console.log({ chain });
 
   const onSelectRole = (role: string) => {
-    console.log({ role });
+    router.push(role);
   };
   
   return (
@@ -125,7 +128,7 @@ export default function LandingPage() {
               "Revenue Analytics",
               "Multi-token Support",
             ]}
-            // disabled={isConnected && status === "no-account"}
+            disabled={isConnected && !merchant}
           />
           <RoleCard
             title="Subscriber"
@@ -136,7 +139,6 @@ export default function LandingPage() {
               "Allowance Control",
               "Cross-chain Balances",
             ]}
-            // disabled={isConnected && status === "no-account"}
           />
           <RoleCard
             title="Protocol Admin"

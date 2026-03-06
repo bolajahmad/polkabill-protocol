@@ -12,7 +12,7 @@ struct Merchant {
     uint256 grace;  // Default grace period, if the plan doesn't have one (in seconds)
     uint256 window; // Default billing window before due date (, in secomds)
     bool active;    // If false, block new subscriptions
-    bytes metadata; // IPFS hash of data
+    bytes32 metadata; // IPFS hash of data
 }
 
 enum MerchantStatus {

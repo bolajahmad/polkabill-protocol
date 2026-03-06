@@ -54,7 +54,7 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
             grace: _grace,
             window: _window,
             active: true,
-            metadata: _meta
+            metadata: keccak256(_meta)
         });
 
         emit MerchantCreated(msg.sender, _meta);
@@ -84,7 +84,7 @@ contract MerchantRegistry is IMerchantRegistry, Ownable {
                 ? merchant.window
                 : _window,
             active: merchant.active,
-            metadata: _metadata
+            metadata: keccak256(_metadata)
         });
 
         emit MerchantUpdated(
