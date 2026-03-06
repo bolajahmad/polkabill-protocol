@@ -25,6 +25,7 @@ export default function LandingPage() {
   const onSelectRole = (role: string) => {
     console.log({ role });
   };
+  
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col p-6 md:p-12">
       {/* Hero Section */}
@@ -124,7 +125,7 @@ export default function LandingPage() {
               "Revenue Analytics",
               "Multi-token Support",
             ]}
-            disabled={isConnected && status === "no-account"}
+            // disabled={isConnected && status === "no-account"}
           />
           <RoleCard
             title="Subscriber"
@@ -135,7 +136,7 @@ export default function LandingPage() {
               "Allowance Control",
               "Cross-chain Balances",
             ]}
-            disabled={isConnected && status === "no-account"}
+            // disabled={isConnected && status === "no-account"}
           />
           <RoleCard
             title="Protocol Admin"
