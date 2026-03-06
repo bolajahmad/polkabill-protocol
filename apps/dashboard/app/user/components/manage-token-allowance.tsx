@@ -39,7 +39,6 @@ export const ManageTokenAllowanceModal = ({ adapter, tokenId, onComplete }: Prop
         console.log({ error });
       },
       onSuccess: (data) => {
-        console.log(data);
         toast.success('Allowance updated successfully');
         onComplete();
       },

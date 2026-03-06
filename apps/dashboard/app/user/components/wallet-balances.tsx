@@ -1,25 +1,28 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useUserAdapterBalance } from '@/lib/hooks/use-user-adapter-balance';
+import { IAdapterWithBalance } from '@/lib/hooks/use-user-adapter-balance';
 import { MAP_CHAIN_ID_TO_ICON } from '@/lib/mocks';
-import { IAdapter } from '@/lib/models/chains';
 import { cn, formatCurrency, truncateAddress } from '@/lib/utils';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
 import { ChevronDown, Globe, Info, RefreshCw, ShieldCheck } from 'lucide-react';
+import { useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { ManageTokenAllowanceModal } from './manage-token-allowance';
 
 type Props = {
   address: `0x${string}`;
-  adapters: IAdapter[];
+  totalAdapters: number;
+  adapters: IAdapterWithBalance[];
 };
 
-export const UserWalletView = ({ address, adapters }: Props) => {
+export const UserWalletView = ({ address, totalAdapters, adapters }: Props) => {
   const chains = useChains();
-  const balances = useUserAdapterBalance(address, adapters);
-  console.log({ balances });
+
+  const totalApproval = useMemo(() => {
+    return adapters.reduce((total, adapter) => total + adapter.totalAllowance, 0);
+  }, [adapters]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -28,12 +31,12 @@ export const UserWalletView = ({ address, adapters }: Props) => {
           <h2 className="text-2xl font-bold">Cross-Chain Adapters</h2>
           <Badge variant="default" className="gap-1">
             <Globe size={12} />
-            {adapters.length} Networks Active
+            {totalAdapters} Networks Active
           </Badge>
         </div>
 
         <div className="space-y-4">
-          {balances.adaptersWithBalance.map(adapter => {
+          {adapters.map(adapter => {
             const chain = chains.find(({ id }) => id === Number(adapter.id));
             const Icon =
               MAP_CHAIN_ID_TO_ICON[Number(adapter.id) as keyof typeof MAP_CHAIN_ID_TO_ICON] || '?';
@@ -42,16 +45,16 @@ export const UserWalletView = ({ address, adapters }: Props) => {
               <Card key={adapter.id} className="overflow-hidden">
                 <Disclosure>
                   <DisclosureButton>
-                    <div
-                      className="p-6 flex items-center justify-between cursor-pointer hover:bg-neutral-50/50 transition-colors"
-                    >
+                    <div className="p-6 flex items-center justify-between cursor-pointer hover:bg-neutral-50/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-neutral-100 rounded-xl flex items-center justify-center text-sm font-bold">
                           {Icon}
                         </div>
                         <div>
-                          <h3 className="font-bold">{chain?.name ?? "Unknown"} {" "}
-                            <span className="italic text-xs text-neutral-400">({adapter.id})</span></h3>
+                          <h3 className="font-bold">
+                            {chain?.name ?? 'Unknown'}{' '}
+                            <span className="italic text-xs text-neutral-400">({adapter.id})</span>
+                          </h3>
                           <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-widest">
                             Billing Adapter
                           </p>
@@ -77,7 +80,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
                         </div>
                         <div
                           className={cn(
-                            'transition-transform duration-200 group-data-open:rotate-180'
+                            'transition-transform duration-200 group-data-open:rotate-180',
                           )}
                         >
                           <ChevronDown size={20} className="text-neutral-400" />
@@ -86,7 +89,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
                     </div>
                   </DisclosureButton>
 
-                 <DisclosurePanel>
+                  <DisclosurePanel>
                     <div className="border-t border-neutral-50 bg-neutral-50/30">
                       <div className="p-4 space-y-2">
                         {adapter.tokens.map(token => (
@@ -96,7 +99,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-[10px] font-bold border border-neutral-100">
-                                {token?.symbol?.[0] || "US"}
+                                {token?.symbol?.[0] || 'US'}
                               </div>
                               <div>
                                 <p className="text-sm font-bold">{token.symbol}</p>
@@ -111,24 +114,35 @@ export const UserWalletView = ({ address, adapters }: Props) => {
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                   Balance
                                 </p>
-                                <p className="text-sm font-bold">{(Number(formatUnits(token.balance, token.decimals))).toLocaleString()} {token.symbol}</p>
+                                <p className="text-sm font-bold">
+                                  {Number(
+                                    formatUnits(token.balance, token.decimals),
+                                  ).toLocaleString()}{' '}
+                                  {token.symbol}
+                                </p>
                               </div>
                               <div className="text-right">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                   Allowance
                                 </p>
                                 <p className="text-sm font-bold text-emerald-600">
-                                  {(Number(formatUnits(token.allowance ?? 0n, token.decimals))).toLocaleString()}
+                                  {Number(
+                                    formatUnits(token.allowance ?? 0n, token.decimals),
+                                  ).toLocaleString()}
                                 </p>
                               </div>
-                             
-                             <ManageTokenAllowanceModal adapter={adapter} tokenId={token.address} onComplete={() => {}}  />
+
+                              <ManageTokenAllowanceModal
+                                adapter={adapter}
+                                tokenId={token.address}
+                                onComplete={() => {}}
+                              />
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                 </DisclosurePanel>
+                  </DisclosurePanel>
                 </Disclosure>
               </Card>
             );
@@ -142,13 +156,13 @@ export const UserWalletView = ({ address, adapters }: Props) => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-neutral-500">Total Approved</span>
-              <span className="text-lg font-bold">{("N/A")}</span>
+              <span className="text-lg font-bold">
+                ${Number(formatUnits(BigInt(totalApproval), 18)).toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-neutral-500">Total Paid (Lifetime)</span>
-              <span className="text-sm font-bold text-neutral-400">
-                N/A
-              </span>
+              <span className="text-sm font-bold text-neutral-400">N/A</span>
             </div>
 
             <div className="pt-4 space-y-2">
@@ -161,7 +175,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
               <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-black transition-all duration-500"
-                //   style={{ width: `${(MOCK_STATS.totalApproved / MOCK_STATS.globalLimit) * 100}%` }}
+                  //   style={{ width: `${(MOCK_STATS.totalApproved / MOCK_STATS.globalLimit) * 100}%` }}
                 />
               </div>
               <p className="text-[10px] text-neutral-400 text-center">
@@ -174,7 +188,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
             <Button
               variant="outline"
               className="w-full justify-start gap-3 rounded-xl"
-            //   onClick={() => setIsLimitModalOpen(true)}
+              //   onClick={() => setIsLimitModalOpen(true)}
             >
               <ShieldCheck size={18} />
               Manage Global Limits
@@ -182,7 +196,7 @@ export const UserWalletView = ({ address, adapters }: Props) => {
             <Button
               variant="outline"
               className="w-full justify-start gap-3 rounded-xl"
-            //   onClick={() => setIsRefillModalOpen(true)}
+              //   onClick={() => setIsRefillModalOpen(true)}
             >
               <RefreshCw size={18} />
               Auto-Refill Settings

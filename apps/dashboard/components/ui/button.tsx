@@ -1,6 +1,6 @@
-import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -18,6 +18,8 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground",
         destructive:
           "bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
+        danger:
+          "bg-red-700 hover:bg-red-600/70 focus-visible:ring-red-600/80 dark:focus-visible:ring-red-600/60 dark:bg-red-600/80 text-white focus-visible:border-red-600/60 dark:hover:bg-red-600/70",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

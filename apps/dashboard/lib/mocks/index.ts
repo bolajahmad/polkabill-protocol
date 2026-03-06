@@ -137,3 +137,43 @@ export const MOCK_CHAIN_CONFIGS = [
 ];
 
 export const MAP_CHAIN_ID_TO_ICON = { 11155111: 'Ξ', 80002: 'P', 84532: 'A', 420420417: 'B' };
+
+export 
+const MOCK_MERCHANTS = [
+  { 
+    id: "m1", 
+    name: "Acme Cloud Services", 
+    description: "Enterprise-grade cloud infrastructure and storage solutions.",
+    category: "Infrastructure",
+    window: "24h",
+    grace: "7d",
+    plans: [
+      { id: "p1", name: "Pro Tier", price: 49.99, interval: 30, description: "Full access to all cloud features, 1TB storage, and priority support." },
+      { id: "p2", name: "Basic Tier", price: 9.99, interval: 30, description: "Standard cloud features with 100GB storage." },
+    ]
+  },
+  { 
+    id: "m2", 
+    name: "Nebula VPN", 
+    description: "Ultra-fast, secure, and private global network access.",
+    category: "Security",
+    window: "12h",
+    grace: "3d",
+    plans: [
+      { id: "p3", name: "Premium VPN", price: 14.99, interval: 30, description: "Access to 500+ servers worldwide with dedicated IP." },
+      { id: "p4", name: "Basic VPN", price: 4.99, interval: 30, description: "Standard security with access to 10 global servers." },
+    ]
+  },
+  { 
+    id: "m3", 
+    name: "Echo Music", 
+    description: "High-fidelity music streaming with millions of tracks.",
+    category: "Entertainment",
+    window: "48h",
+    grace: "14d",
+    plans: [
+      { id: "p5", name: "Family Premium", price: 19.99, interval: 30, description: "Up to 6 accounts with offline listening and no ads." },
+      { id: "p6", name: "Individual", price: 9.99, interval: 30, description: "Single account with high-quality streaming." },
+    ]
+  },
+];
