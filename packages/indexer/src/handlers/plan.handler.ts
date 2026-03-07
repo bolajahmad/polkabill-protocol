@@ -1,9 +1,9 @@
-import { EntityManager } from "../utils/entity-manager";
 import * as planRegAbi from "../abi/plan-registry";
 import { Plan, Status } from "../model";
+import { EntityManager } from "../utils/entity-manager";
 
 export function handleCreatePlan(log: any, em: EntityManager) {
-  const { planId, price, merchantId } =
+  const { planId, price, merchantId, metadata } =
     planRegAbi.events.PlanCreated.decode(log);
 
   // Skip if plan already exists
@@ -21,6 +21,7 @@ export function handleCreatePlan(log: any, em: EntityManager) {
     status: Status.ACTIVE,
     createdAt: new Date(),
     updatedAt: new Date(),
+    metadataUri: metadata
   });
 
   em.createPlan(plan);

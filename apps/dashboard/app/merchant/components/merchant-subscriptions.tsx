@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { ISubscription, SubscriptionStatus } from '@/lib/models/subscriptions';
-import { formatCurrency, truncateAddress } from '@/lib/utils';
+import { cn, formatCurrency, truncateAddress } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Filter, Search, User } from 'lucide-react';
 import { useState } from 'react';
@@ -20,7 +21,6 @@ export const MerchantSubscriptions = ({ mid }: Props) => {
     enabled: !!mid,
   });
   const subscriptions = subData || [];
-  console.log({ subscriptions });
 
   return (
     <div className="space-y-6">
@@ -49,52 +49,85 @@ export const MerchantSubscriptions = ({ mid }: Props) => {
       </div>
 
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-neutral-50 text-[10px] uppercase font-bold text-neutral-400">
-                <th className="p-4">Subscriber</th>
-                <th className="p-4">Plan</th>
-                <th className="p-4">Price</th>
-                <th className="p-4">Next Billing</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-50">
-              {subscriptions.map(sub => (
-                <tr key={sub.id} className="hover:bg-neutral-50/50 transition-colors group">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center text-neutral-400">
-                        <User size={16} />
-                      </div>
-                      <span className="font-mono text-sm font-bold">{truncateAddress(sub.user.id)}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm">{sub.plan.id}</td>
-                  <td className="p-4 text-sm font-bold">{formatCurrency(Number(formatUnits(BigInt(sub.plan.price), 18)))}</td>
-                  <td className="p-4 text-sm text-neutral-500">{new Date(sub.nextBillingTime / 1000).toDateString()}</td>
-                  <td className="p-4">
-                    <Badge variant={sub.status === 'ACTIVE' ? 'success' : 'ghost'}>
-                      {sub.status}
-                    </Badge>
-                  </td>
-                  <td className="p-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedSub(sub)}
-                      className="opacity-70 group-hover:opacity-100 transition-opacity"
-                    >
-                      View Details
-                    </Button>
-                  </td>
+        {subscriptions.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-neutral-50 text-[10px] uppercase font-bold text-neutral-400">
+                  <th className="p-4">Subscriber</th>
+                  <th className="p-4">Plan</th>
+                  <th className="p-4">Price</th>
+                  <th className="p-4">Next Billing</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-neutral-50">
+                {subscriptions.map(sub => (
+                  <tr key={sub.id} className="hover:bg-neutral-50/50 transition-colors group">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center text-neutral-400">
+                          <User size={16} />
+                        </div>
+                        <span className="font-mono text-sm font-bold">
+                          {truncateAddress(sub.user.id)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm">{sub.plan.id}</td>
+                    <td className="p-4 text-sm font-bold">
+                      {formatCurrency(Number(formatUnits(BigInt(sub.plan.price), 18)))}
+                    </td>
+                    <td className="p-4 text-sm text-neutral-500">
+                      {new Date(sub.nextBillingTime / 1000).toDateString()}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={sub.status === 'ACTIVE' ? 'success' : 'ghost'}>
+                        {sub.status}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedSub(sub)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        View Details
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty
+            className={cn(
+              'flex flex-col items-center justify-center p-12 text-center space-y-4 bg-transparent rounded-none border-0',
+            )}
+          >
+            <EmptyHeader
+            >
+              <EmptyMedia
+                variant="icon"
+                className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-neutral-100 flex items-center justify-center text-neutral-400 mb-2"
+              >
+                <User size={32} />
+              </EmptyMedia>
+            </EmptyHeader>
+
+            <EmptyContent className="max-w-xs space-y-1">
+              <EmptyTitle className="text-lg font-bold tracking-tight">
+                No Active Subscription
+              </EmptyTitle>
+              <EmptyDescription className="text-sm text-neutral-500 leading-relaxed">
+                When users subscribe to your plans, they will appear in this list for you to manage.
+              </EmptyDescription>
+            </EmptyContent>
+          </Empty>
+        )}
       </Card>
 
       {/* <Dialog open={!!selectedSub} onClose={() => setSelectedSub(null)}>

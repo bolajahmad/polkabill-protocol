@@ -21,7 +21,6 @@ export default function MerchantsPortalPage() {
       fetch(`/api/merchant/${address}`).then((res) => res.json()),
     enabled: !!address,
   });
-  console.log({ merchant });
 
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8 p-6 md:p-12">
@@ -41,7 +40,7 @@ export default function MerchantsPortalPage() {
                   }
                   className="ml-2"
                 >
-                  Active
+                  {merchant?.status === Status.ACTIVE ? "Active" : "Inactive"}
                 </Badge>
               )}
             </h1>
@@ -70,7 +69,7 @@ export default function MerchantsPortalPage() {
 
         <TabPanels className="pt-4">
           <TabPanel>
-            <MerchantsOverview />
+            <MerchantsOverview mid={merchant?.id as `0x${string}`} />
           </TabPanel>
           <TabPanel>
             <MerchantPlansView

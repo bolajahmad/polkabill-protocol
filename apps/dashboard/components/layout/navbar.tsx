@@ -1,15 +1,10 @@
-"use client";
+'use client';
 
-import { Wallet, ChevronDown, Bell, Menu, Globe, Circle } from "lucide-react";
-import { Button } from "../ui/button";
-import { cn, truncateAddress } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import {
-  Menu as HeadlessMenu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
+import { cn, truncateAddress } from '@/lib/utils';
+import { Menu as HeadlessMenu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { Bell, ChevronDown, Circle, LogOut, RefreshCw, Wallet } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect } from 'react';
 import {
   injected,
   useChains,
@@ -17,10 +12,10 @@ import {
   useConnection,
   useDisconnect,
   useSwitchChain,
-} from "wagmi";
-import Link from "next/link";
+} from 'wagmi';
+import { Button } from '../ui/button';
 
-const userRole: string = "merchant";
+const userRole: string = 'merchant';
 
 export const Navbar = () => {
   const chains = useChains();
@@ -46,24 +41,6 @@ export const Navbar = () => {
             <span className="font-bold text-xl tracking-tight">PolkaBill</span>
           </div>
         </Link>
-
-        {userRole !== "none" && (
-          <div className="hidden md:flex items-center gap-1 bg-neutral-100 p-1 rounded-xl">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-lg px-4 bg-white shadow-sm text-black"
-            >
-              Dashboard
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-lg px-4">
-              History
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-lg px-4">
-              Settings
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -76,7 +53,7 @@ export const Navbar = () => {
                   {chain?.name}
                   <ChevronDown
                     size={14}
-                    className={cn("transition-transform", open && "rotate-180")}
+                    className={cn('transition-transform', open && 'rotate-180')}
                   />
                 </MenuButton>
 
@@ -88,14 +65,12 @@ export const Navbar = () => {
                           type="button"
                           onClick={() => switchChain({ chainId: id })}
                           className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                            focus ? "bg-neutral-50" : "",
+                            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                            focus ? 'bg-neutral-50' : '',
                           )}
                         >
                           {name}
-                          {id === chain?.id && (
-                            <Circle size={6} fill="black" className="ml-auto" />
-                          )}
+                          {id === chain?.id && <Circle size={6} fill="black" className="ml-auto" />}
                         </button>
                       )}
                     </MenuItem>
@@ -109,29 +84,58 @@ export const Navbar = () => {
         {/* Wallet & Balance */}
         <div className="flex items-center gap-2 pl-2 border-l border-neutral-100">
           {isConnected ? (
-            <>
-              <div className="hidden lg:flex flex-col items-end mr-2">
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none mb-1">
-                  Balance
-                </span>
-                <span className="text-sm font-bold leading-none">
-                  1,240.50 USDC
-                </span>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="gap-2 rounded-xl"
-              >
-                <Wallet size={14} />
-                <span className="hidden sm:inline">
-                  {truncateAddress(address ?? "")}
-                </span>
-              </Button>
-            </>
+            <HeadlessMenu as="div" className="relative">
+              {({ open }) => (
+                <>
+                  <MenuButton className="gap-2 rounded-xl" as="div">
+                    <Button variant="secondary" size="sm">
+                      <Wallet size={14} />
+                      <span className="hidden sm:inline">{truncateAddress(address ?? '')}</span>
+                      <ChevronDown
+                        size={14}
+                        className={cn('transition-transform', open && 'rotate-180')}
+                      />
+                    </Button>
+                  </MenuButton>
+
+                  <MenuItems className="absolute top-full mt-2 right-0 w-48 bg-white border border-neutral-100 rounded-2xl shadow-xl p-2 z-100">
+                    <MenuItem>
+                      {({ focus }) => (
+                        <button
+                          onClick={() => connect({ connector: injected() })}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left font-medium',
+                            focus ? 'bg-neutral-50' : '',
+                          )}
+                        >
+                          <RefreshCw size={14} className="text-neutral-400" />
+                          Switch Wallet
+                        </button>
+                      )}
+                    </MenuItem>
+                    <div className="h-px bg-neutral-50 my-1" />
+                    <MenuItem>
+                      {({ focus }) => (
+                        <button
+                          onClick={() => disconnect()}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-600 text-sm transition-colors text-left font-medium',
+                            focus ? 'bg-rose-50' : '',
+                          )}
+                        >
+                          <LogOut size={14} />
+                          Disconnect
+                        </button>
+                      )}
+                    </MenuItem>
+                  </MenuItems>
+                </>
+              )}
+            </HeadlessMenu>
           ) : (
             <Button
               onClick={() => connect({ connector: injected() })}
+              variant="default"
               size="sm"
               className="gap-2 rounded-xl"
             >

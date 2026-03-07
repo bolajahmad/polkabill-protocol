@@ -50,6 +50,7 @@ type Plan @entity {
   billingInterval: Int! # Billing interval in seconds
   grace: Int! # Grace period in seconds
   status: Status!
+  metadataUri: String
 
   subscriptions: [Subscription!]! @derivedFrom(field: "plan")
   createdAt: DateTime!
