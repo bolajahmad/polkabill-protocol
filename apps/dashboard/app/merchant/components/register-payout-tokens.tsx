@@ -14,9 +14,10 @@ import { MerchantContractAddress } from "@/lib/contracts";
 import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
 import { IPayout } from "@/lib/models/merchants";
 import { cn, handleContractError } from "@/lib/utils";
+import { queryClient } from "@/lib/wallet/config";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useChains, useWriteContract } from "wagmi";
+import { useChains, usePublicClient, useWriteContract } from "wagmi";
 
 type Props = {
   mid: `0x${string}`;
@@ -33,6 +34,7 @@ export const UpdateMerchantSupportedToken = ({
   onComplete,
   onCancel,
 }: Props) => {
+  const pubClient = usePublicClient();
   const chains = useChains();
   const [tokenConfig, setTokenConfig] = useState({
     chainId: cid || "",
@@ -46,8 +48,11 @@ export const UpdateMerchantSupportedToken = ({
         const message = handleContractError(error);
         toast.error(message || "Failed to update supported tokens");
       },
-      onSuccess: (data) => {
-        console.log({ data });
+      onSuccess: async (hash) => {
+        await pubClient.waitForTransactionReceipt({ hash });
+        await queryClient.refetchQueries({
+          queryKey: ["merchantinformation", mid],
+        })
         toast.success("Supported tokens updated successfully");
         onComplete();
       },

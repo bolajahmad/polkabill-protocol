@@ -274,9 +274,9 @@
               "type": "bool"
             },
             {
-              "internalType": "bytes",
+              "internalType": "bytes32",
               "name": "metadata",
-              "type": "bytes"
+              "type": "bytes32"
             }
           ],
           "internalType": "struct Merchant",

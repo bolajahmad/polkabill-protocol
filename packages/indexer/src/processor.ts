@@ -1,10 +1,10 @@
 import { EvmBatchProcessor, FieldSelection } from "@subsquid/evm-processor";
-import { Contracts, NetworkConfig } from "./utils/network-config";
-import * as subManagerAbi from "./abi/subscriptions-manager";
+import * as chainRegAbi from "./abi/chain-registry";
 import * as merchantRegAbi from "./abi/merchant-registry";
 import * as planRegAbi from "./abi/plan-registry";
-import * as chainRegAbi from "./abi/chain-registry";
 import * as subControllerAbi from "./abi/subscriptions-controller";
+import * as subManagerAbi from "./abi/subscriptions-manager";
+import { Contracts, NetworkConfig } from "./utils/network-config";
 
 const fields = {
   log: {
@@ -18,7 +18,7 @@ export function makeProcessor(
 ): EvmBatchProcessor<Fields> {
   return (
     new EvmBatchProcessor()
-      .setGateway(config.gateway)
+      // .setGateway(config.gateway)
       .setRpcEndpoint(config.rpcEndpoint)
       .setFinalityConfirmation(250)
       // .setFields() is for choosing data fields for the selected data items.
@@ -28,7 +28,7 @@ export function makeProcessor(
           transactionHash: true,
         },
       })
-      .setBlockRange({ from: 38357290 }) // Starting block height. Can also specify "to" and "step".
+      .setBlockRange({ from: 6_100_000 }) // Starting block height. Can also specify "to" and "step".
       // .addXXX() methods request data items. In this case we're asking for
       // Transfer(address,address,uint256) event logs emitted by the USDC contract.
       //
@@ -40,7 +40,7 @@ export function makeProcessor(
       // Other .addXXX() methods (.addTransaction(), .addTrace(), .addStateDiff()
       // on EVM) are similarly feature-rich.
       .addLog({
-        range: { from: 38357290 },
+        range: { from: 6_100_000 },
         address: [config.contract[Contracts.SUB_MANAGER]],
         topic0: [
           subManagerAbi.events.Subscribed.topic,
@@ -49,7 +49,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38357290 },
+        range: { from: 6_100_000 },
         address: [config.contract[Contracts.MERCHANT_REGISTRY]],
         topic0: [
           merchantRegAbi.events.MerchantCreated.topic,
@@ -60,7 +60,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38357290 },
+        range: { from: 6_100_000 },
         address: [config.contract[Contracts.PLAN_REGISTRY]],
         topic0: [
           planRegAbi.events.PlanCreated.topic,
@@ -68,7 +68,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38357290 },
+        range: { from: 6_100_000 },
         address: [config.contract[Contracts.CHAIN_REGISTRY]],
         topic0: [
           chainRegAbi.events.ChainRegistered.topic,
@@ -77,7 +77,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38357290 },
+        range: { from: 6_100_000 },
         address: [config.contract[Contracts.SUB_CONTROLLER]],
         topic0: [
           subControllerAbi.events.ChargeConfirmed.topic,

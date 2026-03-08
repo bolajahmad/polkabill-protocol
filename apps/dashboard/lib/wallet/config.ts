@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import {
   cookieStorage,
   createConfig,
@@ -20,9 +21,9 @@ export const passetHub = {
   },
   rpcUrls: {
     default: {
-      // http: ['https://eth-rpc-testnet.polkadot.io/', 'https://testnet-passet-hub-eth-rpc.polkadot.io'],
+      http: ['https://eth-rpc-testnet.polkadot.io/', 'https://testnet-passet-hub-eth-rpc.polkadot.io'],
       // http: ["https://services.polkadothub-rpc.com/testnet"],
-      http: ["https://services.polkadothub-rpc.com/testnet"],
+      // http: ["https://services.polkadothub-rpc.com/testnet"],
     },
   },
 } as const;
@@ -81,3 +82,13 @@ declare module "wagmi" {
     config: ReturnType<typeof getConfig>;
   }
 }
+
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retryOnMount: true,
+      staleTime: 2 * 1000 * 60, // 2 minute
+    }
+  }
+});

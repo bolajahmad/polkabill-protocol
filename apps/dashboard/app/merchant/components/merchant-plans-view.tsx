@@ -17,6 +17,7 @@ import { PlanRegistryContractAddress } from '@/lib/contracts';
 import { PlanRegistryContractABI } from '@/lib/contracts/abi/plan-registry.abi';
 import { IMerchant } from '@/lib/models/merchants';
 import { cn, formatCurrency, handleContractError } from '@/lib/utils';
+import { passetHub, queryClient } from '@/lib/wallet/config';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -25,7 +26,7 @@ import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { formatUnits, stringToHex } from 'viem';
-import { useWriteContract } from 'wagmi';
+import { useConnection, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
 import z from 'zod';
 
 const createPlanSchema = (window: number) =>
@@ -42,14 +43,14 @@ const createPlanSchema = (window: number) =>
       .string()
       .min(1, 'Price is required')
       .refine(
-        val => !isNaN(Number(val)) && Number(val) > 0,
+        val => !Number.isNaN(Number(val)) && Number(val) > 0,
         'Price must be a valid positive number',
       ),
     interval: z
       .string()
       .min(1, 'Interval is required')
       .refine(
-        val => !isNaN(Number(val)) && Number(val) > 0,
+        val => !Number.isNaN(Number(val)) && Number(val) > 0,
         'Interval must be a valid positive number',
       )
       .refine(val => Number(val) >= window, 'Interval must be at least the merchant window period'),
@@ -57,7 +58,7 @@ const createPlanSchema = (window: number) =>
       .string()
       .optional()
       .refine(
-        val => !val || (!isNaN(Number(val)) && Number(val) >= 0),
+        val => !val || (!Number.isNaN(Number(val)) && Number(val) >= 0),
         'Grace period must be a valid non-negative number',
       ),
   });
@@ -69,6 +70,7 @@ type Props = {
 };
 
 export const MerchantPlansView = ({ mid, plans, window }: Props) => {
+  const pubClient = usePublicClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { mutate, isPending } = useWriteContract({
     mutation: {
@@ -77,20 +79,24 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         toast.error(msg || 'Failed to create plan');
         console.log({ error });
       },
-      onSuccess: () => {
+      onSuccess: async (hash) => {
+        await pubClient.waitForTransactionReceipt({ hash });
+        await queryClient.refetchQueries({
+          queryKey: ["merchantinformation", mid],
+        })
         toast.success('Plan created successfully');
         setIsModalOpen(false);
       },
     },
   });
   const schema = useMemo(() => createPlanSchema(window), [window]);
-  const { mutateAsync: generateIpfsCid, isPending: generatingHash } = useMutation({
+  const { mutateAsync: generateIpfsCid } = useMutation({
     mutationKey: ['create-metadata-hash'],
     mutationFn: async (data: any) =>
       fetch('/api/generate-ipfs-cid', {
         method: 'POST',
         body: JSON.stringify({
-          title: data.title,
+          title: data.name,
           description: data.description,
           version: '1.0.0',
         }),
@@ -106,6 +112,15 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
       description: '',
     },
   });
+  const { chain } = useConnection();
+
+  const {data} = useReadContract({
+    abi: PlanRegistryContractABI,
+    address: PlanRegistryContractAddress,
+    functionName: 'getPlan',
+    args: [2n],
+  })
+  console.log({ data });
 
   const onSubmit = async (data: Record<string, string>) => {
     console.log('Form data:', data);
@@ -113,10 +128,17 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
 
     if (!data.name || !data.price) return;
 
-    const metadata = JSON.stringify({
+    console.log({ chain });
+
+    if (chain?.id !== passetHub.id) {
+      toast.error('Please connect to the Mumbai testnet to create a plan');
+      return;
+    }
+
+    const metadata = {
       name: data.name,
       description: data.description,
-    });
+    };
 
     const cid = await generateIpfsCid(metadata);
 
@@ -130,6 +152,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         BigInt(data.grace),
         stringToHex(cid.hash),
       ],
+      chain: chain
     });
   };
 
@@ -336,8 +359,8 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                 <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? <Spinner /> : null}
+                <Button type="submit" disabled={isPending || form.formState.isSubmitting}>
+                  {isPending || form.formState.isSubmitting ? <Spinner /> : null}
                   Create Plan
                 </Button>
               </div>

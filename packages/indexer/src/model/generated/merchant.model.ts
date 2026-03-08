@@ -16,8 +16,8 @@ export class Merchant {
     @OneToMany_(() => Payout, e => e.merchant)
     payout!: Payout[]
 
-    @StringColumn_({nullable: true})
-    metadataUri!: string | undefined | null
+    @StringColumn_({nullable: false})
+    metadataUri!: string
 
     @Column_("varchar", {length: 8, nullable: false})
     status!: Status

@@ -54,6 +54,27 @@ export function handleUserSubscribed(log: any, em: EntityManager) {
   em.createSubscription(sub);
 }
 
+export function handleUserUpdateSubscribedPlan(log: any, em: EntityManager) {
+  const {subId, planId, oldPlanId } = subManagerAbi.events.PlanChangeScheduled.decode(log);
+  const sub = em.getSubscription(subId.toString());
+  if (!sub) return;
+
+  const plan = em.getPlan(planId.toString());
+  if (!plan) {
+    console.error("Plan missing for subscription plan change", planId.toString());
+    return;
+  }
+  const oldPlan = em.getPlan(oldPlanId.toString());
+  if (!oldPlan) {
+    console.error("Old plan missing for subscription plan change", oldPlanId.toString());
+    return;
+  }
+
+  sub.pendingPlan = plan;
+  sub.updatedAt = new Date();
+  em.updateSubscription(subId.toString(), sub);
+}
+
 export function handleSubscriptionUpdated(log: any, em: EntityManager) {
   const { status, subscriptionId } =
     subManagerAbi.events.SubscriptionUpdated.decode(log);
@@ -75,4 +96,26 @@ export function handleSubscriptionPaid(log: any, em: EntityManager) {
   sub.billingCycle = billingCycle;
   sub.updatedAt = new Date();
   em.updateSubscription(subscriptionId.toString(), sub);
+}
+
+export function handlePlanChanged(log: any, em: EntityManager) {
+    const {subId, newPlanId, oldPlanId } = subManagerAbi.events.PlanChanged.decode(log);
+  const sub = em.getSubscription(subId.toString());
+  if (!sub) return;
+
+  const plan = em.getPlan(newPlanId.toString());
+  if (!plan) {
+    console.error("Plan missing for subscription plan change", newPlanId.toString());
+    return;
+  }
+  const oldPlan = em.getPlan(oldPlanId.toString());
+  if (!oldPlan) {
+    console.error("Old plan missing for subscription plan change", oldPlanId.toString());
+    return;
+  }
+
+  sub.pendingPlan = null;
+  sub.plan = plan;
+  sub.updatedAt = new Date();
+  em.updateSubscription(subId.toString(), sub);
 }

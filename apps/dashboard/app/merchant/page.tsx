@@ -21,6 +21,7 @@ export default function MerchantsPortalPage() {
       fetch(`/api/merchant/${address}`).then((res) => res.json()),
     enabled: !!address,
   });
+  console.log({ merchant });
 
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8 p-6 md:p-12">

@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { ChainRegistryContractAddress } from "@/lib/contracts";
 import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
 import { handleContractError } from "@/lib/utils";
+import { queryClient } from "@/lib/wallet/config";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useReadContract, useWriteContract } from "wagmi";
+import { usePublicClient, useReadContract, useWriteContract } from "wagmi";
 
 type Props = {
   chainId: number;
@@ -16,13 +17,11 @@ type Props = {
 
 export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
   const [token, setToken] = useState("");
-  console.log({ chainId });
+  const publicClient = usePublicClient();
 
   const {
     mutate: updateAdapterTokens,
     isPending,
-    error,
-    data,
   } = useWriteContract({
     mutation: {
       onError: (error) => {
@@ -30,7 +29,9 @@ export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
         toast.error(message || "Failed to add token");
         console.log({ error });
       },
-      onSuccess: () => {
+      onSuccess: async (hash) => {
+        await publicClient.waitForTransactionReceipt({ hash });
+        await queryClient.invalidateQueries({ queryKey: ['chain-list'] });
         toast.success("Token added successfully");
         onComplete();
       }

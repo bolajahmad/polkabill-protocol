@@ -1,13 +1,13 @@
-module.exports = class Data1772741220163 {
-    name = 'Data1772741220163'
+module.exports = class Data1772975578265 {
+    name = 'Data1772975578265'
 
     async up(db) {
         await db.query(`CREATE TABLE "payout" ("id" character varying NOT NULL, "chain_id" integer NOT NULL, "address" text NOT NULL, "tokens" text array NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "merchant_id" character varying, CONSTRAINT "PK_1cb73ce021dc6618a3818b0a474" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_c851a628a7bb7b384a0d7786ef" ON "payout" ("merchant_id") `)
         await db.query(`CREATE INDEX "IDX_ae5668fb9d09e5f1f988b7af5f" ON "payout" ("address") `)
-        await db.query(`CREATE TABLE "plan" ("id" character varying NOT NULL, "price" numeric NOT NULL, "billing_interval" integer NOT NULL, "grace" integer NOT NULL, "status" character varying(8) NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "merchant_id" character varying, CONSTRAINT "PK_54a2b686aed3b637654bf7ddbb3" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "plan" ("id" character varying NOT NULL, "price" numeric NOT NULL, "billing_interval" integer NOT NULL, "grace" integer NOT NULL, "status" character varying(8) NOT NULL, "metadata_uri" text NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "merchant_id" character varying, CONSTRAINT "PK_54a2b686aed3b637654bf7ddbb3" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_9da5081f1e18e5ebf77321b83e" ON "plan" ("merchant_id") `)
-        await db.query(`CREATE TABLE "merchant" ("id" character varying NOT NULL, "metadata_uri" text, "status" character varying(8) NOT NULL, "billing_window" integer NOT NULL, "grace" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_9a3850e0537d869734fc9bff5d6" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "merchant" ("id" character varying NOT NULL, "metadata_uri" text NOT NULL, "status" character varying(8) NOT NULL, "billing_window" integer NOT NULL, "grace" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_9a3850e0537d869734fc9bff5d6" PRIMARY KEY ("id"))`)
         await db.query(`CREATE TABLE "adapter" ("id" character varying NOT NULL, "address" text NOT NULL, "tokens" text array NOT NULL, "status" character varying(8) NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_e7afb98e16ea0521677e0439acb" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_9b7ed7bda5f0c6a59aaf6044dd" ON "adapter" ("address") `)
         await db.query(`CREATE TABLE "charge" ("id" character varying NOT NULL, "amount" numeric NOT NULL, "chain_id" integer NOT NULL, "token" text NOT NULL, "payout_address" text NOT NULL, "billing_cycle" numeric NOT NULL, "tx_hash" text NOT NULL, "block_number" numeric NOT NULL, "success" boolean NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "subscription_id" character varying, "adapter_id" character varying, CONSTRAINT "PK_ac0381acde3bdffe41ad57cd942" PRIMARY KEY ("id"))`)
@@ -16,10 +16,11 @@ module.exports = class Data1772741220163 {
         await db.query(`CREATE INDEX "IDX_0b27dc28254094b400847c10e7" ON "charge" ("token") `)
         await db.query(`CREATE INDEX "IDX_8c6c6d5710d36317f256f1a899" ON "charge" ("payout_address") `)
         await db.query(`CREATE INDEX "IDX_130a4fa7e9c0238b593805f102" ON "charge" ("tx_hash") `)
-        await db.query(`CREATE TABLE "subscription" ("id" character varying NOT NULL, "status" character varying(9) NOT NULL, "start_time" numeric NOT NULL, "next_billing_time" numeric NOT NULL, "billing_cycle" numeric NOT NULL, "cancelled_at" numeric, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "user_id" character varying, "merchant_id" character varying, "plan_id" character varying, CONSTRAINT "PK_8c3e00ebd02103caa1174cd5d9d" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "subscription" ("id" character varying NOT NULL, "status" character varying(9) NOT NULL, "start_time" numeric NOT NULL, "next_billing_time" numeric NOT NULL, "billing_cycle" numeric NOT NULL, "cancelled_at" numeric, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "user_id" character varying, "merchant_id" character varying, "plan_id" character varying, "pending_plan_id" character varying, CONSTRAINT "PK_8c3e00ebd02103caa1174cd5d9d" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_940d49a105d50bbd616be54001" ON "subscription" ("user_id") `)
         await db.query(`CREATE INDEX "IDX_87834986f9c2f3a41c80e9c9c6" ON "subscription" ("merchant_id") `)
         await db.query(`CREATE INDEX "IDX_5fde988e5d9b9a522d70ebec27" ON "subscription" ("plan_id") `)
+        await db.query(`CREATE INDEX "IDX_ba5ed8bf81a04e5ce89cd7b55c" ON "subscription" ("pending_plan_id") `)
         await db.query(`CREATE TABLE "user" ("id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`)
         await db.query(`ALTER TABLE "payout" ADD CONSTRAINT "FK_c851a628a7bb7b384a0d7786efd" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "plan" ADD CONSTRAINT "FK_9da5081f1e18e5ebf77321b83e7" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
@@ -28,6 +29,7 @@ module.exports = class Data1772741220163 {
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_940d49a105d50bbd616be540013" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_87834986f9c2f3a41c80e9c9c62" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_5fde988e5d9b9a522d70ebec27c" FOREIGN KEY ("plan_id") REFERENCES "plan"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
+        await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_ba5ed8bf81a04e5ce89cd7b55c1" FOREIGN KEY ("pending_plan_id") REFERENCES "plan"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
     }
 
     async down(db) {
@@ -49,6 +51,7 @@ module.exports = class Data1772741220163 {
         await db.query(`DROP INDEX "public"."IDX_940d49a105d50bbd616be54001"`)
         await db.query(`DROP INDEX "public"."IDX_87834986f9c2f3a41c80e9c9c6"`)
         await db.query(`DROP INDEX "public"."IDX_5fde988e5d9b9a522d70ebec27"`)
+        await db.query(`DROP INDEX "public"."IDX_ba5ed8bf81a04e5ce89cd7b55c"`)
         await db.query(`DROP TABLE "user"`)
         await db.query(`ALTER TABLE "payout" DROP CONSTRAINT "FK_c851a628a7bb7b384a0d7786efd"`)
         await db.query(`ALTER TABLE "plan" DROP CONSTRAINT "FK_9da5081f1e18e5ebf77321b83e7"`)
@@ -57,5 +60,6 @@ module.exports = class Data1772741220163 {
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_940d49a105d50bbd616be540013"`)
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_87834986f9c2f3a41c80e9c9c62"`)
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_5fde988e5d9b9a522d70ebec27c"`)
+        await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_ba5ed8bf81a04e5ce89cd7b55c1"`)
     }
 }

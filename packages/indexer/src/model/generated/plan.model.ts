@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, StringColumn as StringColumn_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
 import {Merchant} from "./merchant.model"
 import {Status} from "./_status"
 import {Subscription} from "./subscription.model"
@@ -27,6 +27,9 @@ export class Plan {
 
     @Column_("varchar", {length: 8, nullable: false})
     status!: Status
+
+    @StringColumn_({nullable: false})
+    metadataUri!: string
 
     @OneToMany_(() => Subscription, e => e.plan)
     subscriptions!: Subscription[]

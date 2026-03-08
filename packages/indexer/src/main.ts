@@ -19,9 +19,11 @@ import {
 } from "./handlers/merchant.handler";
 import { handleCreatePlan, handlePlanUpdated } from "./handlers/plan.handler";
 import {
+  handlePlanChanged,
   handleSubscriptionPaid,
   handleSubscriptionUpdated,
   handleUserSubscribed,
+  handleUserUpdateSubscribedPlan,
 } from "./handlers/subscriptions.handler";
 import {
   Adapter,
@@ -62,6 +64,10 @@ async function processLog(log: any, store: EntityManager) {
     handleUpdateSupportedChainTokens(log, store);
   } else if (log.topics[0] == subManagerAbi.events.Subscribed.topic) {
     handleUserSubscribed(log, store);
+  } else if (log.topics[0] == subManagerAbi.events.PlanChangeScheduled.topic) {
+    handleUserUpdateSubscribedPlan(log, store);
+  } else if (log.topics[0] == subManagerAbi.events.PlanChanged.topic) {
+    handlePlanChanged(log, store);
   } else if (log.topics[0] == subManagerAbi.events.SubscriptionPaid.topic) {
     handleSubscriptionPaid(log, store);
   } else if (log.topics[0] == subManagerAbi.events.SubscriptionUpdated.topic) {

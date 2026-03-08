@@ -40,7 +40,7 @@ const merchantRegistrationSchema = z.object({
     .pipe(
       z
         .number()
-        .min(7200, 'Billing window must be at least 2 hours (7200 seconds)')
+        .min(900, 'Billing window must be at least 15 minutes (900 seconds)')
         .max(Number.MAX_SAFE_INTEGER, 'Billing window value too large'),
     ),
 });

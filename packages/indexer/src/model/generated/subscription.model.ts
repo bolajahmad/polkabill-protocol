@@ -26,6 +26,10 @@ export class Subscription {
     @ManyToOne_(() => Plan, {nullable: true})
     plan!: Plan
 
+    @Index_()
+    @ManyToOne_(() => Plan, {nullable: true})
+    pendingPlan!: Plan | undefined | null
+
     @Column_("varchar", {length: 9, nullable: false})
     status!: SubscriptionStatus
 

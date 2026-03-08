@@ -22,7 +22,7 @@ type User @entity {
 type Merchant @entity {
   id: ID! @index # Merchant address, always lowerCase
   payout: [Payout!]! @derivedFrom(field: "merchant") # Payout address, always lowerCase
-  metadataUri: String
+  metadataUri: String!
   status: Status!
   billingWindow: Int! # Billing window in seconds
   grace: Int! # Grace period in seconds
@@ -34,7 +34,7 @@ type Merchant @entity {
 }
 
 type Payout @entity {
-  id: ID! # Unique ID, chainId || merchantId
+  id: ID! # Unique ID, merchantId || chainId
   merchant: Merchant!
   chainId: Int!
   address: String! @index # Payout address, always lowerCase
@@ -50,7 +50,7 @@ type Plan @entity {
   billingInterval: Int! # Billing interval in seconds
   grace: Int! # Grace period in seconds
   status: Status!
-  metadataUri: String
+  metadataUri: String!
 
   subscriptions: [Subscription!]! @derivedFrom(field: "plan")
   createdAt: DateTime!
@@ -73,6 +73,7 @@ type Subscription @entity {
   user: User!
   merchant: Merchant!
   plan: Plan!
+  pendingPlan: Plan
 
   status: SubscriptionStatus!
   startTime: BigInt!
