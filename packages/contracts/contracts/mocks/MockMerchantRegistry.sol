@@ -16,7 +16,7 @@ contract MockMerchantRegistry {
             grace: _grace,
             window: _window,
             active: true,
-            metadata: _meta
+            metadata: keccak256(_meta)
         });
 
         return _owner;

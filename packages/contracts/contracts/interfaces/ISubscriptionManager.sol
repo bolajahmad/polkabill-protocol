@@ -15,11 +15,14 @@ struct Subscription {
     uint256 nextChargeAt;
     uint256 billingCycle;
     Status status;
+    uint256 pendingPlan;
 }
 
 event Subscribed(uint256 indexed subId, address subscriber, uint256 planId);
 event SubscriptionUpdated(uint256 indexed subscriptionId, Status status, address by);
 event SubscriptionPaid(uint256 indexed subscriptionId, uint256 billingCycle, uint256 _nextCharge);
+event PlanChangeScheduled(uint256 indexed subId, uint256 indexed planId, uint256 oldPlanId, uint256 nextCharge);
+event PlanChanged(uint256 indexed subId, uint256 oldPlanId, uint256 newPlanId);
 
 error InsufficientAllowance();
 error SubscriptionMissing();
@@ -32,10 +35,6 @@ interface ISubscriptionManager {
     function subscribe(uint256 planId) external returns (uint256 subscriptionId);
 
     function confirmPayment(uint256 subscriptionId, uint256 billingCycle) external view returns (bool);
-
-    // function isChargeAllowed(uint256 subscriptionId) external view returns (bool);
-
-    function isChargeAllowedMut(uint256 subscriptionId) external returns (bool);
 
     function cancel(uint256 subscriptionId) external;
 

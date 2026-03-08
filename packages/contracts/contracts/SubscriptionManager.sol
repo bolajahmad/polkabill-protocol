@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import "./interfaces/ISubscriptionManager.sol";
-import {Plan, IPlanRegistry} from "./interfaces/IPlanRegistry.sol";
-import {Merchant, IMerchantRegistry} from "./interfaces/IMerchantRegistry.sol";
-import {IChainRegistry, UnregisteredChain} from "./interfaces/IChainRegistry.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import './interfaces/ISubscriptionManager.sol';
+import {Plan, IPlanRegistry} from './interfaces/IPlanRegistry.sol';
+import {Merchant, IMerchantRegistry} from './interfaces/IMerchantRegistry.sol';
+import {IChainRegistry, UnregisteredChain} from './interfaces/IChainRegistry.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable2Step.sol';
 
 interface ISubscriptionsController {
     function relayChargeRequest(
@@ -24,15 +24,14 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
 
     uint256 private nextSubId;
     mapping(uint256 => Subscription) private subscriptions;
+    mapping(address => mapping(address => uint256)) private userSubsByMerchant;
 
     modifier onlyController() {
-        require(msg.sender == address(controller), "NOT_CONTROLLER");
+        require(msg.sender == address(controller), 'NOT_CONTROLLER');
         _;
     }
 
-    constructor(
-        address _chain
-    ) Ownable(msg.sender) {
+    constructor(address _chain) Ownable(msg.sender) {
         chainReg = IChainRegistry(_chain);
         nextSubId = 1;
     }
@@ -41,6 +40,8 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
      * Subscribes a User to a plan ID.
      * Checks that allowance has been approved
      * Merchant must be active
+     *
+     * Must ensure User is not registered to the same merchant' plan
      *
      * @param _pId The plan ID to subscribe to
      */
@@ -57,19 +58,32 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
             revert MerchantNotActive();
         }
 
-        _nextSubId = nextSubId;
-        // compose the Subscription
-        subscriptions[_nextSubId] = Subscription({
-            planId: _pId,
-            subscriber: msg.sender,
-            startTime: block.timestamp,
-            nextChargeAt: block.timestamp + plan.interval,
-            billingCycle: 1,
-            status: Status.ACTIVE
-        });
-        nextSubId += 1;
+        uint256 existing = userSubsByMerchant[msg.sender][plan.merchantId];
+        if (existing != 0) {
+            Subscription storage oldSub = subscriptions[existing];
+            if (oldSub.status == Status.ACTIVE || oldSub.status == Status.DUE) {
+                oldSub.pendingPlan = _pId;
+                emit PlanChangeScheduled(existing, _pId, oldSub.planId, oldSub.nextChargeAt);
 
-        emit Subscribed(_nextSubId, msg.sender, _pId);
+                _nextSubId = existing;
+            }
+        } else {
+            _nextSubId = nextSubId;
+            // compose the Subscription
+            subscriptions[_nextSubId] = Subscription({
+                planId: _pId,
+                pendingPlan: 0,
+                subscriber: msg.sender,
+                startTime: block.timestamp,
+                nextChargeAt: block.timestamp + plan.interval,
+                billingCycle: 1,
+                status: Status.ACTIVE
+            });
+            userSubsByMerchant[msg.sender][plan.merchantId] = _nextSubId;
+            nextSubId += 1;
+
+            emit Subscribed(_nextSubId, msg.sender, _pId);
+        }
     }
 
     /**
@@ -83,16 +97,9 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
      *
      * @return _paid Whether the payment has happened
      */
-    function confirmPayment(
-        uint256 _subId,
-        uint256 _cycle
-    ) external view returns (bool _paid) {
+    function confirmPayment(uint256 _subId, uint256 _cycle) external view returns (bool _paid) {
         Subscription memory sub = subscriptions[_subId];
-        if (
-            sub.planId == 0 ||
-            sub.status == Status.NULL ||
-            sub.billingCycle == 0
-        ) {
+        if (sub.planId == 0 || sub.status == Status.NULL || sub.billingCycle == 0) {
             revert SubscriptionMissing();
         }
 
@@ -127,13 +134,9 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
      *
      * @param _subId The subscription ID
      */
-    function isChargeAllowedMut(uint256 _subId) external returns (bool) {
+    function isChargeAllowedMut(uint256 _subId) internal returns (bool) {
         Subscription storage sub = subscriptions[_subId];
-        if (
-            sub.planId == 0 ||
-            sub.status == Status.NULL ||
-            sub.subscriber == address(0)
-        ) {
+        if (sub.planId == 0 || sub.status == Status.NULL || sub.subscriber == address(0)) {
             revert SubscriptionMissing();
         }
 
@@ -164,39 +167,30 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
             ? sub.nextChargeAt - merchant.window
             : 0;
 
-        if (
-            block.timestamp >= window &&
-            block.timestamp <= sub.nextChargeAt + grace
-        ) {
+        if (block.timestamp >= window && block.timestamp <= sub.nextChargeAt + grace) {
             return true;
         } else {
             return false;
         }
     }
 
-    function requestCharge(
-        uint256 _subId,
-        uint256 _cid,
-        address _token
-    ) external {
+    function requestCharge(uint256 _subId, uint256 _cid, address _token) external {
         // Ensure the Chain ID is supported
         if (!chainReg.isChainSupported(_cid)) {
             revert UnregisteredChain();
         }
         address adapter = chainReg.getBillingAdapter(_cid);
-        require(adapter != address(0), "NO_ADAPTER_FOR_CHAIN");
+        require(adapter != address(0), 'NO_ADAPTER_FOR_CHAIN');
 
         if (!chainReg.isTokenSupported(_cid, _token)) {
             revert UnregisteredChain();
         }
         Subscription storage sub = subscriptions[_subId];
 
-        require(isChargeAllowed(_subId), "CHARGE_NOT_ALLOWED");
-        require(sub.status != Status.CANCELLED, "CANCELLED");
+        require(isChargeAllowedMut(_subId), 'CHARGE_NOT_ALLOWED');
+        require(sub.status != Status.CANCELLED, 'CANCELLED');
 
-        sub.status = Status.DUE;
-
-        Plan memory plan = planReg.getPlan(sub.planId);
+        Plan memory plan = planReg.getPlan(sub.pendingPlan > 0 ? sub.pendingPlan : sub.planId);
         address payout = merchantReg.getPayoutAddress(plan.merchantId, _cid);
 
         // Compile the crosschain message
@@ -212,10 +206,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         controller.relayChargeRequest(_cid, adapter, body, false);
     }
 
-    function confirmCharge(
-        uint256 _subId,
-        uint256 _cycle
-    ) external onlyController {
+    function confirmCharge(uint256 _subId, uint256 _cycle) external onlyController {
         // Ensure Subscription exists
         Subscription storage sub = subscriptions[_subId];
         if (sub.billingCycle == 0 || sub.planId == 0) {
@@ -224,7 +215,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         if (sub.status == Status.CANCELLED) {
             revert SubscriptionCancelled();
         }
-        require(sub.billingCycle == _cycle, "INVALID_BILLING_CYCLE");
+        require(sub.billingCycle == _cycle, 'INVALID_BILLING_CYCLE');
 
         Plan memory plan = planReg.getPlan(sub.planId);
 
@@ -234,6 +225,14 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         sub.status = Status.ACTIVE;
 
         emit SubscriptionPaid(_subId, sub.billingCycle, sub.nextChargeAt);
+
+        if (sub.pendingPlan != 0) {
+            uint256 oldPlan = sub.planId;
+
+            sub.planId = sub.pendingPlan;
+            sub.pendingPlan = 0;
+            emit PlanChanged(_subId, oldPlan, sub.planId);
+        }
     }
 
     /**
@@ -245,22 +244,21 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     function cancel(uint256 _subId) external {
         Subscription storage sub = subscriptions[_subId];
         if (msg.sender == sub.subscriber) {
+            Plan memory plan = planReg.getPlan(sub.planId);
+
             sub.status = Status.CANCELLED;
+            sub.pendingPlan = 0;
+
+            delete userSubsByMerchant[msg.sender][plan.merchantId];
             emit SubscriptionUpdated(_subId, Status.CANCELLED, msg.sender);
         } else {
             revert NotSubscriber();
         }
     }
 
-    function getSubscription(
-        uint256 _subId
-    ) external view returns (Subscription memory) {
+    function getSubscription(uint256 _subId) external view returns (Subscription memory) {
         Subscription memory sub = subscriptions[_subId];
-        if (
-            sub.planId == 0 ||
-            sub.status == Status.NULL ||
-            sub.billingCycle == 0
-        ) {
+        if (sub.planId == 0 || sub.status == Status.NULL || sub.billingCycle == 0) {
             revert SubscriptionMissing();
         }
 

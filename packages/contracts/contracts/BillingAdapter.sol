@@ -25,6 +25,9 @@ contract BillingAdapter is
     bytes private hubControl;
     bool private initialized;
 
+    uint256 public sourceChainId;
+    bool public nativeAdapter;
+
     mapping(bytes32 => bool) public charges;
 
     IERC20 public feeToken;
@@ -138,9 +141,17 @@ contract BillingAdapter is
         emit FeeUpdated(_fee, oldFee);
     }
 
-    function _sourceChain() internal pure returns (bytes memory) {
+    function updateSourceChain(uint256 _chainId, bool _native) external onlyOwner {
+        uint256 oldChainId = sourceChainId;
+        bool oldNative = nativeAdapter;
+        sourceChainId = _chainId;
+        nativeAdapter = _native;
+        emit SourceChainUpdated(_chainId, _native, oldChainId, oldNative);
+    }
+
+    function _sourceChain() internal view returns (bytes memory) {
         // 1000 is the polkadot assetHub chain ID
-        return StateMachine.polkadot(1000);
+        return nativeAdapter ? StateMachine.polkadot(sourceChainId) : StateMachine.evm(sourceChainId);
     }
 
     function _updateToken(address _token, bool _add) internal {
@@ -177,14 +188,14 @@ contract BillingAdapter is
         SafeERC20.safeTransferFrom(
             IERC20(_token),
             _subscriber,
-            _payout,
-            _amount - fee
+            address(this),
+            _amount
         );
         SafeERC20.safeTransferFrom(
             IERC20(_token),
-            _subscriber,
             address(this),
-            fee
+            _payout,
+            _amount - fee
         );
 
         charges[chargeId] = true;
