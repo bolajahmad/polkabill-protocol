@@ -1,0 +1,23 @@
+{
+  "name": "@polkabill/react",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch"
+  },
+  "dependencies": {
+    "@polkabill/sdk-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "wagmi": "^2.19.5",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14"
+  }
+}

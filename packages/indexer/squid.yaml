@@ -1,0 +1,19 @@
+manifestVersion: subsquid.io/v0.1
+name: polkabill-squid
+version: 1
+description: Indexes events of smart contracts (involving Merchants, Subscriptions, Charges) of PolkaBill protocol
+build:
+  package_manager: pnpm
+deploy:
+  addons:
+    postgres: 
+    rpc:
+      - eth.http
+  processor:
+    cmd:
+      - sqd
+      - process:prod
+  api:
+    cmd:
+      - sqd
+      - serve:prod
