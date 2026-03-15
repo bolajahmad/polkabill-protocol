@@ -3,7 +3,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,11 +20,11 @@ import {
   InputGroupTextarea,
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
-import { PlanRegistryContractAddress } from '@/lib/contracts';
+import { BASE_CHAIN, PlanRegistryContractAddress } from '@/lib/contracts';
 import { PlanRegistryContractABI } from '@/lib/contracts/abi/plan-registry.abi';
 import { IMerchant } from '@/lib/models/merchants';
 import { cn, formatCurrency, handleContractError } from '@/lib/utils';
-import { passetHub, queryClient } from '@/lib/wallet/config';
+import { queryClient } from '@/lib/wallet/config';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -79,11 +86,11 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         toast.error(msg || 'Failed to create plan');
         console.log({ error });
       },
-      onSuccess: async (hash) => {
+      onSuccess: async hash => {
         await pubClient.waitForTransactionReceipt({ hash });
         await queryClient.refetchQueries({
-          queryKey: ["merchantinformation", mid],
-        })
+          queryKey: ['merchantinformation', mid],
+        });
         toast.success('Plan created successfully');
         setIsModalOpen(false);
       },
@@ -114,12 +121,12 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
   });
   const { chain } = useConnection();
 
-  const {data} = useReadContract({
+  const { data } = useReadContract({
     abi: PlanRegistryContractABI,
     address: PlanRegistryContractAddress,
     functionName: 'getPlan',
     args: [2n],
-  })
+  });
   console.log({ data });
 
   const onSubmit = async (data: Record<string, string>) => {
@@ -130,7 +137,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
 
     console.log({ chain });
 
-    if (chain?.id !== passetHub.id) {
+    if (chain?.id !== BASE_CHAIN.id) {
       toast.error('Please connect to the Mumbai testnet to create a plan');
       return;
     }
@@ -152,7 +159,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         BigInt(data.grace),
         stringToHex(cid.hash),
       ],
-      chain: chain
+      chain: chain,
     });
   };
 
@@ -228,7 +235,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                 No Subscription Plans
               </EmptyTitle>
               <EmptyDescription className="text-sm text-neutral-500 leading-relaxed">
-                You haven't created any subscription plans yet. Create your first plan to start
+                You haven&apos;t created any subscription plans yet. Create your first plan to start
                 accepting recurring payments. receiving them.
               </EmptyDescription>
 

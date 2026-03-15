@@ -22,7 +22,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     ISubscriptionsController private controller;
     IChainRegistry private chainReg;
 
-    uint256 private nextSubId;
+    uint256 public nextSubId;
     mapping(uint256 => Subscription) private subscriptions;
     mapping(address => mapping(address => uint256)) private userSubsByMerchant;
 

@@ -4,7 +4,7 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const SubscriptionManagerModule = buildModule("SubscriptionManagerModule", (m) => {
-  const chain = "0x5e58936DdFA55A9a5115446B02689874261eD34A";
+  const chain = "0xD4e3363741d2e2A034A3F0B2004a90aDD62968bf";
 
   const subManager = m.contract("SubscriptionManager", [chain]);
 

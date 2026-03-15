@@ -14,7 +14,8 @@
     "@subsquid/util-internal": "^3.2.0",
     "dotenv": "^16.4.5",
     "pg": "^8.20.0",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "viem": "2.47.0"
   },
   "devDependencies": {
     "@subsquid/evm-typegen": "^4.2.0",

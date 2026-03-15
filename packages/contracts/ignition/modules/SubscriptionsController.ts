@@ -6,11 +6,11 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 const SubscriptionsControllerModule = buildModule(
   "SubscriptionsControllerMod",
   (m) => {
-    const host = "0xbb26e04a71e7c12093e82b83ba310163eac186fa";
-    const feeToken = "0x0dc440cf87830f0af564eb8b62b454b7e0c68a4b";
-    const chainReg = "0x5e58936DdFA55A9a5115446B02689874261eD34A";
-    const subManager = "0x23a92444BC4a9Cf639B54732eD33A55A9ae0ba15";
-    const merchantReg = "0x43408C22242fa6A59DE28ab7128Ea4aC121C5569";
+    const host = "0xD198c01839dd4843918617AfD1e4DDf44Cc3BB4a";
+    const feeToken = "0xA801da100bF16D07F668F4A49E1f71fc54D05177";
+    const chainReg = "0xD4e3363741d2e2A034A3F0B2004a90aDD62968bf";
+    const subManager = "0x221AA534015a9260c10d183B087dDd2447d2058f";
+    const merchantReg = "0x55eF99F40f8674034e192BC90407f2284B11C3EF";
 
     const subscriptionsController = m.contract("SubscriptionsController", [
       host,

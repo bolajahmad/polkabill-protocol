@@ -1,8 +1,9 @@
 manifestVersion: subsquid.io/v0.1
 name: polkabill-squid
 version: 1
-description: The very first evm squid from manifest
-build: 
+description: Indexes events of smart contracts (involving Merchants, Subscriptions, Charges) of PolkaBill protocol
+build:
+  package_manager: pnpm
 deploy:
   addons:
     postgres: 

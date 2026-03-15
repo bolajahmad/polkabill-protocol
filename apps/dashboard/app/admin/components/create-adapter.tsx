@@ -3,11 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { ChainRegistryContractAddress } from '@/lib/contracts';
+import { BASE_CHAIN, ChainRegistryContractAddress } from '@/lib/contracts';
 import { ChainRegistryContractABI } from '@/lib/contracts/abi/chain-registry.abi';
 import { createAdapterSchema } from '@/lib/schemas';
 import { handleContractError } from '@/lib/utils';
-import { passetHub, queryClient } from '@/lib/wallet/config';
+import { queryClient } from '@/lib/wallet/config';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, Loader2, Plus, ShieldCheck, X } from 'lucide-react';
@@ -69,8 +69,8 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
     // Handle form submission
     console.log('Form data:', formData);
 
-    if (chain?.id !== passetHub.id) {
-      switchChain({ chainId: passetHub.id });
+    if (chain?.id !== BASE_CHAIN.id) {
+      switchChain({ chainId: BASE_CHAIN.id });
     }
     // Call mutate to submit to blockchain
     const cid = BigInt(formData.chainId || 0);
@@ -79,7 +79,7 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
       address: ChainRegistryContractAddress,
       functionName: 'registerChain',
       args: [cid, formData.adapter as `0x${string}`],
-      chain: passetHub,
+      chain: BASE_CHAIN,
     });
   };
 
