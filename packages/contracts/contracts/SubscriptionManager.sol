@@ -64,6 +64,59 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
             if (oldSub.status == Status.ACTIVE || oldSub.status == Status.DUE) {
                 oldSub.pendingPlan = _pId;
                 emit PlanChangeScheduled(existing, _pId, oldSub.planId, oldSub.nextChargeAt);
+            }
+            _nextSubId = existing;
+        } else {
+            _nextSubId = nextSubId;
+            // compose the Subscription
+            subscriptions[_nextSubId] = Subscription({
+                planId: _pId,
+                pendingPlan: 0,
+                subscriber: msg.sender,
+                startTime: block.timestamp,
+                nextChargeAt: block.timestamp + merchant.window,
+                billingCycle: 1,
+                status: Status.ACTIVE
+            });
+            userSubsByMerchant[msg.sender][plan.merchantId] = _nextSubId;
+            nextSubId += 1;
+
+            emit Subscribed(_nextSubId, msg.sender, _pId);
+        }
+    }
+
+    /**
+     * Subscribes a User to a plan ID.
+     * Checks that allowance has been approved
+     * Merchant must be active
+     *
+     * Must ensure User is not registered to the same merchant' plan
+     *
+     * @param _pId The plan ID to subscribe to
+     */
+    function subscribe(
+        uint256 _pId,
+        uint256 _cid,
+        address _token
+    ) external returns (uint256 _nextSubId) {
+        // Check that the plan exists
+        Plan memory plan = planReg.getPlan(_pId);
+        if (!plan.active) {
+            revert PlanNotActive();
+        }
+
+        // Merchant must exist too
+        Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
+        if (!merchant.active) {
+            revert MerchantNotActive();
+        }
+
+        uint256 existing = userSubsByMerchant[msg.sender][plan.merchantId];
+        if (existing != 0) {
+            Subscription storage oldSub = subscriptions[existing];
+            if (oldSub.status == Status.ACTIVE || oldSub.status == Status.DUE) {
+                oldSub.pendingPlan = _pId;
+                emit PlanChangeScheduled(existing, _pId, oldSub.planId, oldSub.nextChargeAt);
 
                 _nextSubId = existing;
             }
@@ -75,7 +128,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
                 pendingPlan: 0,
                 subscriber: msg.sender,
                 startTime: block.timestamp,
-                nextChargeAt: block.timestamp + plan.interval,
+                nextChargeAt: block.timestamp + merchant.window,
                 billingCycle: 1,
                 status: Status.ACTIVE
             });
@@ -83,6 +136,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
             nextSubId += 1;
 
             emit Subscribed(_nextSubId, msg.sender, _pId);
+            requestCharge(_nextSubId, _cid, _token);
         }
     }
 
@@ -174,7 +228,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         }
     }
 
-    function requestCharge(uint256 _subId, uint256 _cid, address _token) external {
+    function requestCharge(uint256 _subId, uint256 _cid, address _token) public {
         // Ensure the Chain ID is supported
         if (!chainReg.isChainSupported(_cid)) {
             revert UnregisteredChain();
