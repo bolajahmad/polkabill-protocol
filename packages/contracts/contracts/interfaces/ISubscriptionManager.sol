@@ -34,6 +34,12 @@ error NotSubscriber();
 interface ISubscriptionManager {
     function subscribe(uint256 planId) external returns (uint256 subscriptionId);
 
+    function subscribe(
+        uint256 _pId,
+        uint256 _cid,
+        address _token
+    ) external returns (uint256 _nextSubId);
+
     function confirmPayment(uint256 subscriptionId, uint256 billingCycle) external view returns (bool);
 
     function cancel(uint256 subscriptionId) external;

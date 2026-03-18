@@ -8,7 +8,7 @@ const BillingAdapterModule = buildModule("BillingAdapterMod", (m) => {
 
   // Call Initialize
   const host = "0x2EdB74C269948b60ec1000040E104cef0eABaae8";
-  const hub = "0x7Cb0fb5c089e7277E7cA7779a1c98C51A4d5FeE9";
+  const hub = "0x287BD5b54AD697cdbf8337928307a26e9Bf9DbA2";
   const feeToken = "0xA801da100bF16D07F668F4A49E1f71fc54D05177";
 
   m.call(billingAdapter, "initialize", [
