@@ -23,17 +23,16 @@ import { Spinner } from '@/components/ui/spinner';
 import { BASE_CHAIN, PlanRegistryContractAddress } from '@/lib/contracts';
 import { PlanRegistryContractABI } from '@/lib/contracts/abi/plan-registry.abi';
 import { IMerchant } from '@/lib/models/merchants';
-import { cn, formatCurrency, handleContractError } from '@/lib/utils';
+import { cn, formatCurrency, formatDuration, handleContractError, parseJsonOrUndefined } from '@/lib/utils';
 import { queryClient } from '@/lib/wallet/config';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
 import { Layers, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { formatUnits, stringToHex } from 'viem';
-import { useConnection, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
+import { formatUnits, hexToString, stringToHex } from 'viem';
+import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
 import z from 'zod';
 
 const createPlanSchema = (window: number) =>
@@ -74,9 +73,10 @@ type Props = {
   mid: `0x${string}`;
   window: number;
   plans: IMerchant['plans'];
+  defaultGrace: number;
 };
 
-export const MerchantPlansView = ({ mid, plans, window }: Props) => {
+export const MerchantPlansView = ({ mid, defaultGrace, plans, window }: Props) => {
   const pubClient = usePublicClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { mutate, isPending } = useWriteContract({
@@ -97,18 +97,6 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
     },
   });
   const schema = useMemo(() => createPlanSchema(window), [window]);
-  const { mutateAsync: generateIpfsCid } = useMutation({
-    mutationKey: ['create-metadata-hash'],
-    mutationFn: async (data: any) =>
-      fetch('/api/generate-ipfs-cid', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: data.name,
-          description: data.description,
-          version: '1.0.0',
-        }),
-      }).then(res => res.json()),
-  });
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -120,34 +108,20 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
     },
   });
   const { chain } = useConnection();
-
-  const { data } = useReadContract({
-    abi: PlanRegistryContractABI,
-    address: PlanRegistryContractAddress,
-    functionName: 'getPlan',
-    args: [2n],
-  });
-  console.log({ data });
+  const { mutate: switchChain } = useSwitchChain();
 
   const onSubmit = async (data: Record<string, string>) => {
-    console.log('Form data:', data);
-    // Call mutate to submit to blockchain
-
     if (!data.name || !data.price) return;
 
-    console.log({ chain });
-
     if (chain?.id !== BASE_CHAIN.id) {
-      toast.error('Please connect to the Mumbai testnet to create a plan');
+      switchChain({ chainId: BASE_CHAIN.id });
       return;
     }
 
-    const metadata = {
+    const metadata = JSON.stringify({
       name: data.name,
       description: data.description,
-    };
-
-    const cid = await generateIpfsCid(metadata);
+    });
 
     mutate({
       abi: PlanRegistryContractABI,
@@ -157,7 +131,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
         BigInt(Math.floor(Number(data.price) * 10 ** 18)), // Assumes 18 decimals for stablecoins
         BigInt(data.interval),
         BigInt(data.grace),
-        stringToHex(cid.hash),
+        stringToHex(metadata),
       ],
       chain: chain,
     });
@@ -175,46 +149,57 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.length > 0 ? (
-          plans.map(plan => (
-            <Card key={plan.id} className="flex flex-col h-full">
-              <div className="p-6 flex-1 space-y-4">
-                <div className="flex justify-between items-start">
-                  <Badge variant={plan.status ? 'success' : 'destructive'}>
-                    {plan.status ? 'Active' : 'Paused'}
-                  </Badge>
-                  <span className="text-[10px] font-mono text-neutral-400">ID: #{plan.id}</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Basic</h3>
-                  <p className="text-sm text-neutral-500 mt-1">Basic access</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold">
-                    {formatCurrency(Number(formatUnits(BigInt(plan.price), 18)))} USD
-                  </span>
-                  <span className="text-neutral-400 text-sm">/{plan.billingInterval} days</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4 py-4 border-y border-neutral-50">
-                  <div>
-                    <p className="text-[10px] uppercase text-neutral-400 font-bold">Subscribers</p>
-                    <p className="text-lg font-bold">{plan.subscriptions.length ?? '0'}</p>
+          plans.map(plan => {
+            const metadata = parseJsonOrUndefined(
+              hexToString(plan.metadataUri as `0x${string}`),
+            ) as Record<string, string>;
+
+            return (
+              <Card key={plan.id} className="flex flex-col h-full">
+                <div className="p-4 flex-1 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <Badge variant={plan.status ? 'success' : 'destructive'}>
+                      {plan.status ? 'Active' : 'Paused'}
+                    </Badge>
+                    <span className="text-[10px] font-mono text-neutral-400">ID: #{plan.id}</span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase text-neutral-400 font-bold">Grace Period</p>
-                    <p className="text-lg font-bold">{plan.grace} days</p>
+                    <h3 className="text-xl font-bold">{metadata?.name ?? 'Basic'}</h3>
+                    <p className="text-sm text-neutral-500 mt-1">{metadata?.description ?? 'Basic access'}</p>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold">
+                      {formatCurrency(Number(formatUnits(BigInt(plan.price), 18)))} USD
+                    </span>
+                    <span className="text-neutral-400 text-sm">/{formatDuration(plan.billingInterval)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 py-4 border-y border-neutral-50">
+                    <div>
+                      <p className="text-[10px] uppercase text-neutral-400 font-bold">
+                        Subscribers
+                      </p>
+                      <p className="text-lg font-bold">{plan.subscriptions.length ?? '0'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-neutral-400 font-bold">
+                        Grace Period
+                      </p>
+                      {/* <p className="text-lg font-bold">{plan.grace || defaultGrace} minutes</p> */}
+                      <p className="text-lg font-bold">{formatDuration(plan.grace || defaultGrace)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-4 bg-neutral-50/50 flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl">
-                  Edit
-                </Button>
-                <Button variant="secondary" className="flex-1 rounded-xl">
-                  Stats
-                </Button>
-              </div>
-            </Card>
-          ))
+                <div className="p-4 bg-neutral-50/50 flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl">
+                    Edit
+                  </Button>
+                  <Button variant="secondary" className="flex-1 rounded-xl">
+                    Stats
+                  </Button>
+                </div>
+              </Card>
+            );
+          })
         ) : (
           <Empty
             className={cn(
@@ -368,7 +353,7 @@ export const MerchantPlansView = ({ mid, plans, window }: Props) => {
                 </Button>
                 <Button type="submit" disabled={isPending || form.formState.isSubmitting}>
                   {isPending || form.formState.isSubmitting ? <Spinner /> : null}
-                  Create Plan
+                  {isPending ? 'Creating Plan...' : 'Create Plan'}
                 </Button>
               </div>
             </form>

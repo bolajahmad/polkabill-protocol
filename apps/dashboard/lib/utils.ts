@@ -36,3 +36,38 @@ export async function fetchIpfsJson<T = unknown>(uri: string): Promise<T> {
 
   return res.json() as Promise<T>
 }
+
+export function parseJsonOrUndefined<T = unknown>(value: string): T | undefined {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+const DURATION_UNITS: { label: string; seconds: number }[] = [
+  { label: "yr",     seconds: 365 * 24 * 3600 },
+  { label: "month",  seconds: 30  * 24 * 3600 },
+  { label: "week",   seconds: 7   * 24 * 3600 },
+  { label: "day",    seconds: 24  * 3600 },
+  { label: "hr",     seconds: 3600 },
+  { label: "min",    seconds: 60 },
+  { label: "sec",    seconds: 1 },
+];
+
+export function formatDuration(seconds: number): string {
+  for (const { label, seconds: unitSeconds } of DURATION_UNITS) {
+    const value = seconds / unitSeconds;
+    if (Number.isInteger(value) && value >= 1) {
+      return `${value} ${label}${value !== 1 ? "s" : ""}`;
+    }
+  }
+  // Fallback: use the largest unit where value >= 1
+  for (const { label, seconds: unitSeconds } of DURATION_UNITS) {
+    const value = seconds / unitSeconds;
+    if (value >= 1) {
+      return `${Math.round(value)} ${label}${Math.round(value) !== 1 ? "s" : ""}`;
+    }
+  }
+  return `${seconds} sec${seconds !== 1 ? "s" : ""}`;
+}

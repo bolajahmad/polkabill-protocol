@@ -3,7 +3,7 @@ import { Plan, Status } from "../model";
 import { EntityManager } from "../utils/entity-manager";
 
 export function handleCreatePlan(log: any, em: EntityManager) {
-  const { planId, price, merchantId, metadata } =
+  const { planId, price, interval, merchantId, metadata } =
     planRegAbi.events.PlanCreated.decode(log);
 
   // Skip if plan already exists
@@ -14,14 +14,14 @@ export function handleCreatePlan(log: any, em: EntityManager) {
 
   const plan = new Plan({
     id: planId.toString(),
-    merchant,                // FK → Merchant
+    merchant,
     price,
-    billingInterval: 0,      // Default, updated via PlanUpdated event
-    grace: 0,                // Default, updated via PlanUpdated event
+    billingInterval: Number(interval),
+    grace: 0,
     status: Status.ACTIVE,
     createdAt: new Date(),
     updatedAt: new Date(),
-    metadataUri: metadata
+    metadataUri: metadata,
   });
 
   em.createPlan(plan);

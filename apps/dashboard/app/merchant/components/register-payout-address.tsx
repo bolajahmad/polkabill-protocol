@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { MerchantContractAddress } from '@/lib/contracts';
+import { BASE_CHAIN, MerchantContractAddress } from '@/lib/contracts';
 import { MerchantContractABI } from '@/lib/contracts/abi/merchant.abi';
 import { IAdapter } from '@/lib/models/chains';
 import { IPayout } from '@/lib/models/merchants';
@@ -23,7 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { useChains, usePublicClient, useWriteContract } from 'wagmi';
+import { useChains, useConnection, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
 
 type Props = {
   mid: `0x${string}`;
@@ -35,6 +35,8 @@ type Props = {
 export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Props) => {
   const pubClient = usePublicClient();
   const chains = useChains();
+  const { chain } = useConnection();
+  const { mutate: switchChain } = useSwitchChain();
   const form = useForm({
     resolver: zodResolver(createAdapterSchemaLooseChain),
     defaultValues: {
@@ -71,12 +73,14 @@ export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Pro
   const handleSubmit = (data: Record<string, string | number>) => {
     // Call API to update payout address
     console.log('Submitting payout address update:', data, mid);
+    if (chain?.id !== BASE_CHAIN.id) switchChain({ chainId: BASE_CHAIN.id });
     const chainId = data.chainId.toString().split('/')[0].trim();
     registerPayout({
       abi: MerchantContractABI,
       address: MerchantContractAddress,
       functionName: 'setPayoutAddress',
       args: [mid, BigInt(chainId), data.adapter as `0x${string}`],
+      chainId: BASE_CHAIN.id,
     });
   };
 
@@ -162,7 +166,7 @@ export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Pro
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending ? <Spinner /> : null}
-          Save Payout Address
+          {isPending ? 'Saving...' : 'Save Payout Address'}
         </Button>
       </div>
     </form>

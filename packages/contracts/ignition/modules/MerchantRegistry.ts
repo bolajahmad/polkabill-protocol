@@ -4,8 +4,8 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const MerchantRegistryModule = buildModule("MerchantRegistryMod", (m) => {
-    const chainReg = "0x406E9a8f32B5bD57Bd3fE9BB65884f2305d3E0d9";
-    const subManager = "0x482F03F0F2F0DE177B4aEE0EC26Cb40556824E60";
+    const chainReg = "0xbBa26e6278D6eD710f881633E780A9C3b23a3BAb";
+    const subManager = "0xc1c8c9b92AB6083609E29193929852883c66D32a";
 
   const merchantReg = m.contract("MerchantRegistry", [chainReg, subManager]);
 

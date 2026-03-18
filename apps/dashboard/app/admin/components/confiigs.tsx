@@ -15,6 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { ChainRegistryContractAddress } from '@/lib/contracts';
 import { ChainRegistryContractABI } from '@/lib/contracts/abi/chain-registry.abi';
+import { useContractAdminsInfo } from '@/lib/hooks/use-check-account';
 import { IAdapter, Status } from '@/lib/models/chains';
 import { cn, formatCurrency, handleContractError, truncateAddress } from '@/lib/utils';
 import { queryClient } from '@/lib/wallet/config';
@@ -28,6 +29,7 @@ import { UpdateAdapterConfig } from './create-adapter';
 
 export const AdminConfig = () => {
   const pubClient = usePublicClient();
+  const { admins } = useContractAdminsInfo();
   const chains = useChains();
   const [isUpdating, setUpdating] = useState<number | false>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,7 +46,7 @@ export const AdminConfig = () => {
       },
       onSuccess: async hash => {
         await pubClient.waitForTransactionReceipt({ hash });
-        await queryClient.invalidateQueries({ queryKey: ['chain-list'] });
+        await queryClient.refetchQueries({ queryKey: ['chain-list'] });
         toast.success('Adapter status updated successfully!');
       },
       onSettled: () => {
@@ -109,6 +111,7 @@ export const AdminConfig = () => {
                           <Spinner />
                         ) :  <Switch
                           checked={c.status === Status.ACTIVE}
+                          disabled={isUpdating !== false}
                           onCheckedChange={value => toggleAdapterStatus(c.id, value)}
                         />}
                       </div>
@@ -165,16 +168,13 @@ export const AdminConfig = () => {
           <CardHeader title="Role Management">Protocol administrators</CardHeader>
           <div className="p-6 space-y-6">
             <div className="space-y-4">
-              {[
-                { addr: '0x71C...3E21', role: 'Super Admin' },
-                { addr: '0x12A...9F82', role: 'Operator' },
-              ].map(admin => (
+              {admins.map(admin => (
                 <div
-                  key={admin.addr}
+                  key={admin.id}
                   className="flex items-center justify-between p-3 border border-neutral-100 rounded-xl"
                 >
                   <div>
-                    <p className="text-sm font-mono font-bold">{admin.addr}</p>
+                    <p className="text-sm font-mono font-bold">{truncateAddress(admin.address)}</p>
                     <p className="text-[10px] text-neutral-400 uppercase font-bold">{admin.role}</p>
                   </div>
                   <Button variant="ghost" size="sm" className="text-rose-500 hover:bg-rose-50">

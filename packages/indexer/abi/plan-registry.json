@@ -48,6 +48,12 @@
       },
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "interval",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "bytes",
         "name": "metadata",
         "type": "bytes"

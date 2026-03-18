@@ -82,6 +82,9 @@ export function handleSubscriptionUpdated(log: any, em: EntityManager) {
   if (!sub) return;
 
   sub.status = SubStatusMap[status as keyof typeof SubStatusMap];
+  if (sub.status === SubscriptionStatus.CANCELLED) {
+    sub.cancelledAt = BigInt(log.block.timestamp);
+  }
   sub.updatedAt = new Date();
   em.updateSubscription(subscriptionId.toString(), sub);
 }

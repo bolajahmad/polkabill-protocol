@@ -88,7 +88,7 @@ contract ChainRegistry is IChainRegistry, Ownable {
 
         tokenSupport[_cid][_token] = _support;
         emit TokenSupportUpdated(_cid, _token, _support);
-        bytes memory body = abi.encode(_cid, _token, _support);
+        bytes memory body = abi.encode(_token, _support);
 
         ISubscriptionsController(subsController).relayTokenUpdate(
             _cid,

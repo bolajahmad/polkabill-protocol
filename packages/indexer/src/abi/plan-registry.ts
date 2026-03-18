@@ -3,7 +3,7 @@ import { event, fun, viewFun, indexed, ContractBase } from '@subsquid/evm-abi'
 import type { EventParams as EParams, FunctionArguments, FunctionReturn } from '@subsquid/evm-abi'
 
 export const events = {
-    PlanCreated: event("0x3790d2272c31cdfa0b95d812fb5a44dc21f1d3eaf0cce707acb5c92fed34e4c0", "PlanCreated(uint256,address,uint256,bytes)", {"planId": indexed(p.uint256), "merchantId": indexed(p.address), "price": p.uint256, "metadata": p.bytes}),
+    PlanCreated: event("0xc7d88d0b889bbad512fce4dd4cd9554cebd7243ce4eafe6f21dfaf44ae95c243", "PlanCreated(uint256,address,uint256,uint256,bytes)", {"planId": indexed(p.uint256), "merchantId": indexed(p.address), "price": p.uint256, "interval": p.uint256, "metadata": p.bytes}),
     PlanUpdated: event("0x7b0ef22373aefc96be3b02eb3e299426f268fcba0993f2e87879f13c733ce8a4", "PlanUpdated(uint256,uint256,uint256,bool)", {"planId": indexed(p.uint256), "price": p.uint256, "grace": p.uint256, "active": p.bool}),
 }
 

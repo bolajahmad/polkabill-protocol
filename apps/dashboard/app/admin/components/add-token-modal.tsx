@@ -8,7 +8,7 @@ import { queryClient } from "@/lib/wallet/config";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { usePublicClient, useWriteContract } from "wagmi";
 
 type Props = {
   chainId: number;
@@ -37,13 +37,6 @@ export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
       }
     }
   });
-  const {data: chainData} = useReadContract({
-    address: ChainRegistryContractAddress,
-    abi: ChainRegistryContractABI,
-    functionName: "isChainSupported",
-    args: [BigInt(chainId)],
-  })
-  console.log({ chainData  });
 
   const validToken = /^0x[a-fA-F0-9]{40}$/.test(token);
 

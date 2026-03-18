@@ -10,14 +10,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { MerchantContractAddress } from "@/lib/contracts";
+import { BASE_CHAIN, MerchantContractAddress } from "@/lib/contracts";
 import { MerchantContractABI } from "@/lib/contracts/abi/merchant.abi";
 import { IPayout } from "@/lib/models/merchants";
 import { cn, handleContractError } from "@/lib/utils";
 import { queryClient } from "@/lib/wallet/config";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useChains, usePublicClient, useWriteContract } from "wagmi";
+import { useChains, useConnection, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 type Props = {
   mid: `0x${string}`;
@@ -36,6 +36,8 @@ export const UpdateMerchantSupportedToken = ({
 }: Props) => {
   const pubClient = usePublicClient();
   const chains = useChains();
+  const { chain } = useConnection();
+  const { mutate: switchChain } = useSwitchChain();
   const [tokenConfig, setTokenConfig] = useState({
     chainId: cid || "",
     tokenAddress: "",
@@ -63,6 +65,8 @@ export const UpdateMerchantSupportedToken = ({
       return;
     }
 
+    if (chain?.id !== BASE_CHAIN.id) switchChain({ chainId: BASE_CHAIN.id });
+
     updateTokens({
       abi: MerchantContractABI,
       address: MerchantContractAddress,
@@ -73,6 +77,7 @@ export const UpdateMerchantSupportedToken = ({
         [tokenConfig.tokenAddress as `0x${string}`],
         tokenConfig.adding,
       ],
+      chainId: BASE_CHAIN.id,
     });
   };
 

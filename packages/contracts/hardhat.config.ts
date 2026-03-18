@@ -44,6 +44,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       polkadotTestnet: vars.get('SUBSCAN_API_KEY'),
       baseSepolia: vars.get('ETHERSCAN_API_KEY'),
+      sepolia: vars.get('ETHERSCAN_API_KEY'),
       polygonAmoy: vars.get('ETHERSCAN_API_KEY'),
     },
     customChains: [

@@ -15,7 +15,7 @@ struct Plan {
     bytes32 metadata;
 }
 
-event PlanCreated(uint256 indexed planId, address indexed merchantId, uint256 price, bytes metadata);
+event PlanCreated(uint256 indexed planId, address indexed merchantId, uint256 price, uint256 interval, bytes metadata);
 event PlanUpdated(uint256 indexed planId, uint256 price, uint256 grace, bool active);
 
 error InvalidPlanParameter();

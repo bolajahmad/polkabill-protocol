@@ -17,10 +17,12 @@ export const functions = {
     confirmPayment: viewFun("0x38358149", "confirmPayment(uint256,uint256)", {"_subId": p.uint256, "_cycle": p.uint256}, p.bool),
     getSubscription: viewFun("0xdc311dd3", "getSubscription(uint256)", {"_subId": p.uint256}, p.struct({"planId": p.uint256, "subscriber": p.address, "startTime": p.uint256, "nextChargeAt": p.uint256, "billingCycle": p.uint256, "status": p.uint8, "pendingPlan": p.uint256})),
     isChargeAllowed: viewFun("0x7710049c", "isChargeAllowed(uint256)", {"_subId": p.uint256}, p.bool),
+    nextSubId: viewFun("0x9c99f37a", "nextSubId()", {}, p.uint256),
     owner: viewFun("0x8da5cb5b", "owner()", {}, p.address),
     renounceOwnership: fun("0x715018a6", "renounceOwnership()", {}, ),
     requestCharge: fun("0xaec50b52", "requestCharge(uint256,uint256,address)", {"_subId": p.uint256, "_cid": p.uint256, "_token": p.address}, ),
-    subscribe: fun("0x0f574ba7", "subscribe(uint256)", {"_pId": p.uint256}, p.uint256),
+    'subscribe(uint256)': fun("0x0f574ba7", "subscribe(uint256)", {"_pId": p.uint256}, p.uint256),
+    'subscribe(uint256,uint256,address)': fun("0xaa4925d7", "subscribe(uint256,uint256,address)", {"_pId": p.uint256, "_cid": p.uint256, "_token": p.address}, p.uint256),
     transferOwnership: fun("0xf2fde38b", "transferOwnership(address)", {"newOwner": p.address}, ),
     updateController: fun("0x06cb5b66", "updateController(address)", {"_controller": p.address}, ),
     updateMerchantRegistry: fun("0x85625ac3", "updateMerchantRegistry(address)", {"_merchant": p.address}, ),
@@ -39,6 +41,10 @@ export class Contract extends ContractBase {
 
     isChargeAllowed(_subId: IsChargeAllowedParams["_subId"]) {
         return this.eth_call(functions.isChargeAllowed, {_subId})
+    }
+
+    nextSubId() {
+        return this.eth_call(functions.nextSubId, {})
     }
 
     owner() {
@@ -70,6 +76,9 @@ export type GetSubscriptionReturn = FunctionReturn<typeof functions.getSubscript
 export type IsChargeAllowedParams = FunctionArguments<typeof functions.isChargeAllowed>
 export type IsChargeAllowedReturn = FunctionReturn<typeof functions.isChargeAllowed>
 
+export type NextSubIdParams = FunctionArguments<typeof functions.nextSubId>
+export type NextSubIdReturn = FunctionReturn<typeof functions.nextSubId>
+
 export type OwnerParams = FunctionArguments<typeof functions.owner>
 export type OwnerReturn = FunctionReturn<typeof functions.owner>
 
@@ -79,8 +88,11 @@ export type RenounceOwnershipReturn = FunctionReturn<typeof functions.renounceOw
 export type RequestChargeParams = FunctionArguments<typeof functions.requestCharge>
 export type RequestChargeReturn = FunctionReturn<typeof functions.requestCharge>
 
-export type SubscribeParams = FunctionArguments<typeof functions.subscribe>
-export type SubscribeReturn = FunctionReturn<typeof functions.subscribe>
+export type SubscribeParams_0 = FunctionArguments<typeof functions['subscribe(uint256)']>
+export type SubscribeReturn_0 = FunctionReturn<typeof functions['subscribe(uint256)']>
+
+export type SubscribeParams_1 = FunctionArguments<typeof functions['subscribe(uint256,uint256,address)']>
+export type SubscribeReturn_1 = FunctionReturn<typeof functions['subscribe(uint256,uint256,address)']>
 
 export type TransferOwnershipParams = FunctionArguments<typeof functions.transferOwnership>
 export type TransferOwnershipReturn = FunctionReturn<typeof functions.transferOwnership>

@@ -92,6 +92,8 @@ contract BillingAdapter is
                     (uint256, uint256, address, address, uint256, address)
                 );
             _charge(_subid, _amount, _subscriber, _token, _cycle, _payout);
+        } else if (RequestType(_type) == RequestType.MERCHANT_UPDATED) {
+            // No-op: payout address is included in each charge body
         } else {
             revert InvalidRequestType();
         }
@@ -99,7 +101,7 @@ contract BillingAdapter is
 
     function onPostRequestTimeout(
         PostRequest memory request
-    ) external override onlyAfterInitialize {
+    ) external override onlyHost onlyAfterInitialize {
         (uint8 _type, bytes memory _params) = abi.decode(
             request.body,
             (uint8, bytes)
@@ -191,9 +193,8 @@ contract BillingAdapter is
             address(this),
             _amount
         );
-        SafeERC20.safeTransferFrom(
+        SafeERC20.safeTransfer(
             IERC20(_token),
-            address(this),
             _payout,
             _amount - fee
         );

@@ -12,7 +12,7 @@ import { UserExploreSubscriptionsView } from './components/explore-subscriptions
 import { UserSubscriptionsList } from './components/user-subscriptions';
 import { UserWalletView } from './components/wallet-balances';
 
-export default function LandingPage() {
+export default function UsersPortalPage() {
   const { isConnected, address, isConnecting } = useConnection();
   const { data, isLoading } = useQuery<{ data: IAdapter[] }>({
     queryKey: ['chain-list'],

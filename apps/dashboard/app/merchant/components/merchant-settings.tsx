@@ -183,7 +183,7 @@ export function MerchantSettingsView({ payouts, merchantId }: Props) {
                   onCancel={() => setOpenModal(null)}
                   onComplete={cid => {
                     if (cid) setChainId(cid);
-                    setOpenModal('token');
+                    setOpenModal(null);
                   }}
                 />
               </DialogPanel>

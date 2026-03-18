@@ -3,23 +3,30 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { SubscriptionManagerContractAddress } from '@/lib/contracts';
+import { BASE_CHAIN, SubscriptionManagerContractAddress } from '@/lib/contracts';
 import { SubscriptionManagerContractABI } from '@/lib/contracts/abi/subscription-manager.abi';
 import { IAdapterWithBalance } from '@/lib/hooks/use-user-adapter-balance';
 import { ISubscription } from '@/lib/models/subscriptions';
-import { cn, formatCurrency, handleContractError, truncateAddress } from '@/lib/utils';
+import {
+  cn,
+  formatCurrency,
+  formatDuration,
+  handleContractError,
+  parseJsonOrUndefined,
+  truncateAddress,
+} from '@/lib/utils';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { Clock, Globe, Info, ShieldCheck, Zap } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { erc20Abi, formatUnits, parseUnits } from 'viem';
+import { erc20Abi, formatUnits, hexToString, parseUnits } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import { useChains, useConnection, useSwitchChain, useWriteContract } from 'wagmi';
 
@@ -32,18 +39,24 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAllowance, setNewAllowance] = useState('');
   const chains = useChains();
-  const { mutate: switchChain } = useSwitchChain();
+  const { mutate: switchChain } = useSwitchChain({
+    mutation: {
+      onSettled: () => setIsSubmitting(false),
+    },
+  });
   const { chain } = useConnection();
   const [selectedSub, setSelectedSub] = useState<ISubscription>();
   const [paymentChain, setPaymentChain] = useState('');
   const [paymentToken, setPaymentToken] = useState('');
-  const { mutate: writeContract, isPending: isMakingPayment } = useWriteContract({
+  const [isSubmitting, setIsSubmitting] = useState<'charge' | 'approve' | 'cancel' | false>(false);
+  const { mutate: writeContract } = useWriteContract({
     mutation: {
       onError: error => {
         const message = handleContractError(error);
         toast.error(message || 'Transaction failed!');
         console.log({ error });
       },
+      onSettled: () => setIsSubmitting(false),
     },
   });
 
@@ -65,20 +78,25 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
     const token = adapter?.tokens.find(({ address }) => address === paymentToken.split('/')[0]);
 
     return { adapter, token };
-  }, [paymentChain, paymentToken]);
-  
+  }, [paymentChain, adapters, paymentToken]);
+
+  console.log({ chain });
   const payForSubscription = () => {
     if (!selectedSub || !adapter || !token) return;
 
-    if (chain?.id !== baseSepolia.id) return;
+    setIsSubmitting('charge');
+
+    if (chain?.id !== BASE_CHAIN.id) {
+      switchChain({ chainId: BASE_CHAIN.id });
+    }
 
     writeContract(
       {
         abi: SubscriptionManagerContractABI,
         address: SubscriptionManagerContractAddress,
         functionName: 'requestCharge',
-        args: [BigInt(selectedSub.id), BigInt(adapter.id), token.address as `0x${string}`],
-        chain: chain!
+        args: [BigInt(selectedSub.id), BigInt(adapter.id), token.address],
+        chain: BASE_CHAIN,
       },
       {
         onSuccess: () => {
@@ -87,13 +105,36 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
       },
     );
   };
+  const cancelSubscription = () => {
+    if (!selectedSub) return;
+
+    setIsSubmitting('cancel');
+
+    if (chain?.id !== BASE_CHAIN.id) {
+      switchChain({ chainId: BASE_CHAIN.id });
+    }
+
+    writeContract({
+      abi: SubscriptionManagerContractABI,
+      address: SubscriptionManagerContractAddress,
+      functionName: 'cancel',
+      args: [BigInt(selectedSub?.id || 0)],
+      chainId: BASE_CHAIN.id,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {subscriptions.map(sub => {
           const merchant = sub.plan.merchant;
+          const merchantMetadata = parseJsonOrUndefined(
+            hexToString(merchant?.metadataUri as `0x${string}`),
+          ) as Record<string, string>;
           const price = Number(formatUnits(BigInt(sub.plan.price), 18));
+          const metadata = parseJsonOrUndefined(
+            hexToString(sub.plan.metadataUri as `0x${string}`),
+          ) as Record<string, string>;
 
           return (
             <Card key={sub.id} className="group hover:border-black/10 transition-all">
@@ -104,9 +145,9 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       {sub.id}
                     </div>
                     <div>
-                      <h3 className="font-bold">{truncateAddress(merchant?.id ?? '')}</h3>
+                      <h3 className="font-bold">{merchantMetadata.title || 'N/A'}</h3>
                       <p className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
-                        {sub.plan.id}
+                        {metadata.name || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -121,7 +162,9 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       </p>
                       <p className="text-2xl font-bold">
                         ${price.toLocaleString()}
-                        <span className="text-xs text-neutral-400 font-normal">/mo</span>
+                        <span className="text-xs text-neutral-400 font-normal">
+                          /{formatDuration(sub.plan.billingInterval)}
+                        </span>
                       </p>
                     </div>
                     <div className="text-right space-y-1">
@@ -131,7 +174,10 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       <p className="text-sm font-bold flex items-center gap-1 justify-end">
                         <Clock size={12} className="text-neutral-400" />
                         {sub.nextBillingTime
-                          ? new Date(Math.floor(sub.nextBillingTime / 1000)).toLocaleDateString()
+                          ? new Date(Math.floor(sub.nextBillingTime)).toLocaleDateString()
+                          : 'N/A'}{' '}
+                        {sub.nextBillingTime
+                          ? new Date(Math.floor(sub.nextBillingTime)).toLocaleTimeString()
                           : 'N/A'}
                       </p>
                     </div>
@@ -140,7 +186,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                   <div className="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg border border-neutral-100">
                     <Globe size={14} className="text-neutral-400" />
                     <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">
-                      Total Paid: {sub.billingCycle * price} USD
+                      Total Paid: {sub.billingCycle > 1 ? sub.billingCycle * price : 0} USD
                     </span>
                   </div>
                 </div>
@@ -324,7 +370,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                                 onClick={() => payForSubscription()}
                                 className="w-full rounded-xl gap-2"
                               >
-                                <Zap size={16} />
+                                {isSubmitting == 'charge' ? <Spinner /> : <Zap size={16} />}
                                 Trigger Payment Now
                               </Button>
                             )}
@@ -387,7 +433,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                                 }}
                                 variant="secondary"
                               >
-                                Update
+                                {isSubmitting == 'approve' ? <Spinner /> : 'Update'}
                               </Button>
                             </div>
                           </div>
@@ -397,17 +443,10 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       <div className="w-full flex items-center">
                         <Button
                           variant="danger"
-                          onClick={() =>
-                            writeContract({
-                              abi: SubscriptionManagerContractABI,
-                              address: SubscriptionManagerContractAddress,
-                              functionName: 'cancel',
-                              args: [BigInt(selectedSub?.id || 0)],
-                              chainId: Number(adapter?.id) as any,
-                            })
-                          }
+                          onClick={() => cancelSubscription()}
                           className="mr-auto rounded-xl"
                         >
+                          {isSubmitting == 'cancel' ? <Spinner /> : null}
                           Cancel Subscription
                         </Button>
                         <Button

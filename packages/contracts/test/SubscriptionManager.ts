@@ -19,11 +19,13 @@ async function deployFixture() {
 
   // Deploy subscriptions manager
   const subManager = await hre.viem.deployContract("SubscriptionManager", [
-    merchantRegistry.address,
-    planRegistry.address,
-    controller.account.address,
-    "0xD198c01839dd4843918617AfD1e4DDf44Cc3BB4a", // ChainRegistry address, not used in this test but required for constructor
+    "0xD198c01839dd4843918617AfD1e4DDf44Cc3BB4a", // ChainRegistry address
   ]);
+
+  // Set registries and controller via owner setters
+  await subManager.write.updateMerchantRegistry([merchantRegistry.address]);
+  await subManager.write.updatePlanRegistry([planRegistry.address]);
+  await subManager.write.updateController([controller.account.address]);
 
   const publicClient = await hre.viem.getPublicClient();
 

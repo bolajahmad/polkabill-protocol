@@ -1,5 +1,6 @@
 import { Adapter, Charge, Merchant, Payout, Plan, Subscription, User } from "../model";
 import { BatchCache } from "./batch-cache";
+import { merchantPayoutId } from "./helpers";
 
 type EntityState<T> = {
   entity: T;
@@ -215,6 +216,12 @@ export class EntityManager {
 
   /** Find payout by merchant and chainId */
   getPayoutByMerchantAndChain(merchantId: string, chainId: number): Payout | undefined {
+    const payoutId = merchantPayoutId(merchantId, BigInt(chainId));
+    const payout = this.getPayout(payoutId);
+    if (payout) {
+      return payout;
+    }
+
     for (const [, { entity }] of this.payouts) {
       if (entity.merchant?.id === merchantId && entity.chainId === chainId) {
         return entity;

@@ -63,8 +63,6 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
   const { chain } = useConnection();
   const { mutate: switchChain } = useSwitchChain();
 
-  console.log({ chain });
-
   const onSubmit = (formData: Record<string, string | number>) => {
     // Handle form submission
     console.log('Form data:', formData);
@@ -199,7 +197,7 @@ export const UpdateAdapterConfig = ({ chainId }: Props) => {
                         {isPending || form.formState.isSubmitting ? (
                           <span className="flex items-center gap-2">
                             <Loader2 size={16} className="animate-spin" />
-                            Creating Account...
+                            Registering chain...
                           </span>
                         ) : (
                           'Register Adapter'

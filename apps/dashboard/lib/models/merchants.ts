@@ -19,6 +19,7 @@ export interface IPlan {
   status: Status,
   updatedAt: string;
   subscriptions: []
+  metadataUri: string;
   merchant: IMerchant | null;
 }
 

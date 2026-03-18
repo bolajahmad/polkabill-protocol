@@ -19,6 +19,7 @@ export const GET_MERCHANTS = gql`
         status
         createdAt
         updatedAt
+        metadataUri
       }
     }
   }
@@ -47,6 +48,7 @@ export const GET_MERCHANT_BY_ID = gql`
         grace
         status
         createdAt
+        metadataUri
         updatedAt
         subscriptions {
         id

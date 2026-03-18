@@ -5,6 +5,8 @@ import type { EventParams as EParams, FunctionArguments, FunctionReturn } from '
 export const events = {
     ChargeConfirmed: event("0x2db06b3c04b68c96e2a63ff2345138426c37fb1b427aa36341c02a09fde075f6", "ChargeConfirmed(uint256,uint256,uint256)", {"chainId": indexed(p.uint256), "subscriptionId": indexed(p.uint256), "billingCycle": p.uint256}),
     ChargeRequestRelayed: event("0xc3fd80598b4c318a763ec64cc9128dc82492afe845edf1f07b606099f3e61b7b", "ChargeRequestRelayed(uint256,address,bytes)", {"chainId": indexed(p.uint256), "adapter": indexed(p.address), "body": p.bytes}),
+    DispatchFailed: event("0x11754adff210f7c167749ca2dbc4874b7e7b01a11e351b03fa176d44060f2226", "DispatchFailed(uint256,address,uint8)", {"chainId": indexed(p.uint256), "adapter": indexed(p.address), "messageType": p.uint8}),
+    DispatchTimeout: event("0x2d7b5720cfc3c36d767445ee31544f6772e9758037291b49611328cffe850719", "DispatchTimeout(uint8)", {"messageType": p.uint8}),
     MerchantProfileUpdated: event("0x98de668d692f033c3537455830f3362062426b0708d930ecde0695ccdd6551dd", "MerchantProfileUpdated(uint256,address,bytes)", {"chainId": indexed(p.uint256), "adapter": indexed(p.address), "body": p.bytes}),
     OwnershipTransferred: event("0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0", "OwnershipTransferred(address,address)", {"previousOwner": indexed(p.address), "newOwner": indexed(p.address)}),
     TokenUpdateRelayed: event("0xeda821a22a19ed6b7d6ab50c6faec9145fd0bc8efbc39a1ed7e2d16eef2f2ae2", "TokenUpdateRelayed(uint256,address,bool)", {"chainId": indexed(p.uint256), "adapter": indexed(p.address), "native": p.bool}),
@@ -105,6 +107,8 @@ export class Contract extends ContractBase {
 /// Event types
 export type ChargeConfirmedEventArgs = EParams<typeof events.ChargeConfirmed>
 export type ChargeRequestRelayedEventArgs = EParams<typeof events.ChargeRequestRelayed>
+export type DispatchFailedEventArgs = EParams<typeof events.DispatchFailed>
+export type DispatchTimeoutEventArgs = EParams<typeof events.DispatchTimeout>
 export type MerchantProfileUpdatedEventArgs = EParams<typeof events.MerchantProfileUpdated>
 export type OwnershipTransferredEventArgs = EParams<typeof events.OwnershipTransferred>
 export type TokenUpdateRelayedEventArgs = EParams<typeof events.TokenUpdateRelayed>

@@ -1,15 +1,14 @@
 import { assertNotNull } from "@subsquid/util-internal";
 
 export enum Contracts {
-  SUB_MANAGER = "0x221AA534015a9260c10d183B087dDd2447d2058f",
-  PLAN_REGISTRY = "0xc7a444dD7820526355b376685609fB50238a410e",
-  CHAIN_REGISTRY = "0xD4e3363741d2e2A034A3F0B2004a90aDD62968bf",
-  SUB_CONTROLLER = "0x7Cb0fb5c089e7277E7cA7779a1c98C51A4d5FeE9",
-  MERCHANT_REGISTRY = "0x55eF99F40f8674034e192BC90407f2284B11C3EF",
+  SUB_MANAGER = "0xc1c8c9b92AB6083609E29193929852883c66D32a",
+  PLAN_REGISTRY = "0x1d8C64CA9E08AbF56b832edC9606c4Eec7889059",
+  CHAIN_REGISTRY = "0xbBa26e6278D6eD710f881633E780A9C3b23a3BAb",
+  SUB_CONTROLLER = "0x75704c73bdD5Ce0dd843ea4AAa375099c133E669",
+  MERCHANT_REGISTRY = "0x6D73534191353E714F607D6b3C08425987131C19",
 }
 
 export type NetworkConfig = {
-  gateway: string;
   rpcEndpoint: string;
   finalityConfirmation: number;
   startAtBlock: number;
@@ -17,13 +16,12 @@ export type NetworkConfig = {
 };
 
 export const networkConfig: NetworkConfig = {
-  gateway: "https://v2.archive.subsquid.io/network/base-sepolia",
   rpcEndpoint: assertNotNull(
-    process.env.RPC_BASE_SEPOLIA_HTTP,
-    "No RPC endpoint supplied via RPC_BASE_SEPOLIA_HTTP",
+    process.env.RPC_ASSETHUB_HTTP,
+    "No RPC endpoint supplied via RPC_ASSETHUB_HTTP",
   ),
-  finalityConfirmation: 75,
-  startAtBlock: 6_100_000,
+  finalityConfirmation: Number(process.env.FINALITY_CONFIRMATION ?? 10),
+  startAtBlock: 6_515_050,
   contract: {
     [Contracts.SUB_MANAGER]: Contracts.SUB_MANAGER,
     [Contracts.PLAN_REGISTRY]: Contracts.PLAN_REGISTRY,
