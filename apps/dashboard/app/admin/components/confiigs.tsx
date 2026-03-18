@@ -94,7 +94,7 @@ export const AdminConfig = () => {
               <Skeleton className="h-12 w-12 rounded-full" />
             ) : adapters.length ? (
               adapters.map(c => (
-                <div key={c.id} className="p-4 space-y-3">
+                <div key={c.id + c.address} className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-start justify-start gap-3">
                       <div>

@@ -117,7 +117,7 @@ export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Pro
                 <SelectContent position="item-aligned">
                   {adapters.map(({ address, id }) => (
                     <SelectItem
-                      key={address}
+                      key={address + id}
                       value={`${id.toString()}/${
                         chains.find(chain => chain.id === Number(id))?.name || 'Unknown'
                       }`}
