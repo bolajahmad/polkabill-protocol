@@ -21,7 +21,7 @@ export const networkConfig: NetworkConfig = {
     "No RPC endpoint supplied via RPC_ASSETHUB_HTTP",
   ),
   finalityConfirmation: Number(process.env.FINALITY_CONFIRMATION ?? 10),
-  startAtBlock: 6_515_050,
+  startAtBlock: 6546985,
   contract: {
     [Contracts.SUB_MANAGER]: Contracts.SUB_MANAGER,
     [Contracts.PLAN_REGISTRY]: Contracts.PLAN_REGISTRY,

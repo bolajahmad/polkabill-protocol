@@ -98,7 +98,7 @@ const ViewPlanDetailsModal = ({ plan, merchant }: { plan: IPlan; merchant: IMerc
   );
 };
 
-const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWithBalance[] }) => {
+const SubscribeToPlan = ({ plan, adapters, merchant }: { plan: IPlan; adapters: IAdapterWithBalance[]; merchant: IMerchant }) => {
   const [isOpen, setOpen] = useState(false);
   const { chain } = useConnection();
   const [paymentChain, setPaymentChain] = useState('');
@@ -133,6 +133,14 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
     });
   };
 
+  const planMetadata = parseJsonOrUndefined(hexToString(plan.metadataUri as `0x${string}`)) as Record<
+    string,
+    string
+  >;
+  const merchantData = parseJsonOrUndefined(
+    hexToString(merchant?.metadataUri as `0x${string}`),
+  ) as Record<string, string>;
+
   useEffect(() => {
     if (chain?.id !== BASE_CHAIN.id) switchChain({ chainId: BASE_CHAIN.id });
   }, [chains, chain, switchChain]);
@@ -146,7 +154,7 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
         <DialogBackdrop className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-6">
-            <DialogTitle>Subscribe to {plan?.id}</DialogTitle>
+            <DialogTitle>Subscribe to {planMetadata.name || ("#" + plan.id)}</DialogTitle>
             <div className="space-y-6">
               <div className="p-4 bg-neutral-900 text-white rounded-2xl flex justify-between items-center">
                 <div>
@@ -154,14 +162,14 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                     Total Due Now
                   </p>
                   <p className="text-2xl font-bold">
-                    {Number(formatUnits(BigInt(plan?.price || 0), 18)).toLocaleString()}
+                    ${Number(formatUnits(BigInt(plan?.price || 0), 18)).toLocaleString()}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                     Merchant
                   </p>
-                  <p className="font-bold">{truncateAddress(plan.merchant?.id || '')}</p>
+                  <p className="font-bold">{truncateAddress(merchantData.title || '')}</p>
                 </div>
               </div>
 
@@ -185,7 +193,7 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                       <SelectContent position="item-aligned">
                         {adapters.map(({ address, id, tokens }) => (
                           <SelectItem
-                            key={address}
+                            key={address + id}
                             value={`${id.toString()}/${
                               chains.find(chain => chain.id === Number(id))?.name || 'Unknown'
                             }`}
@@ -436,7 +444,7 @@ export const UserExploreSubscriptionsView = ({ adapters }: Props) => {
                         {metadata.description || 'N/A'}
                       </p>
                       <div className="flex gap-2">
-                        <SubscribeToPlan plan={plan} adapters={adapters} />
+                        <SubscribeToPlan plan={plan} adapters={adapters} merchant={merchant} />
 
                         <ViewPlanDetailsModal plan={plan} merchant={merchant} />
                       </div>

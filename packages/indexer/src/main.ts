@@ -170,38 +170,55 @@ async function saveEntities(
 function processLog(log: IndexerLog, em: EntityManager): void {
   const topic = log.topics[0];
   if (topic === merchantRegAbi.events.MerchantCreated.topic) {
+    console.log("New Merchant Created: ", log.block, new Date().toISOString(), "\n");
     handleMerchantCreated(log, em);
   } else if (topic === merchantRegAbi.events.MerchantUpdated.topic) {
+    console.log("Merchant Updated: ", log.block, new Date().toISOString(), "\n");
     handleMerchantUpdated(log, em);
   } else if (topic === merchantRegAbi.events.MerchantStatusUpdated.topic) {
+    console.log("Merchant Status Updated: ", log.block, new Date().toISOString(), "\n");
     handleMerchantStatusUpdated(log, em);
   } else if (topic === merchantRegAbi.events.PayoutAddressSet.topic) {
+    console.log("Merchant Payout Address Set: ", log.block, new Date().toISOString(), "\n");
     handlePayoutAddressSet(log, em);
   } else if (topic === merchantRegAbi.events.TokensAdded.topic) {
+    console.log("Merchant Tokens Added: ", log.block, new Date().toISOString(), "\n");
     handleTokensAdded(log, em);
   } else if (topic === planRegAbi.events.PlanCreated.topic) {
+    console.log("New Plan Created: ", log.block, new Date().toISOString(), "\n");
     handleCreatePlan(log, em);
   } else if (topic === planRegAbi.events.PlanUpdated.topic) {
+    console.log("Plan Updated: ", log.block, new Date().toISOString(), "\n");
     handlePlanUpdated(log, em);
   } else if (topic === chainRegAbi.events.ChainRegistered.topic) {
+    console.log("Chain Registered: ", log.block, new Date().toISOString(), "\n");
     handleChainRegistered(log, em);
   } else if (topic === chainRegAbi.events.ChainStatusUpdated.topic) {
+    console.log("Chain Status Updated: ", log.block, new Date().toISOString(), "\n");
     handleChainStatusUpdated(log, em);
   } else if (topic === chainRegAbi.events.TokenSupportUpdated.topic) {
+    console.log("Chain Supported Tokens Updated: ", log.block, new Date().toISOString(), "\n");
     handleUpdateSupportedChainTokens(log, em);
   } else if (topic === subManagerAbi.events.Subscribed.topic) {
+    console.log("New User Subscribed: ", log.block, new Date().toISOString(), "\n");
     handleUserSubscribed(log, em);
   } else if (topic === subManagerAbi.events.PlanChangeScheduled.topic) {
+    console.log("User Plan Change Scheduled: ", log.block, new Date().toISOString(), "\n");
     handleUserUpdateSubscribedPlan(log, em);
   } else if (topic === subManagerAbi.events.PlanChanged.topic) {
+    console.log("User Plan Changed: ", log.block, new Date().toISOString(), "\n");
     handlePlanChanged(log, em);
   } else if (topic === subManagerAbi.events.SubscriptionPaid.topic) {
+    console.log("User Subscription Paid: ", log.block, new Date().toISOString(), "\n");
     handleSubscriptionPaid(log, em);
   } else if (topic === subManagerAbi.events.SubscriptionUpdated.topic) {
+    console.log("User Subscription Updated: ", log.block, new Date().toISOString(), "\n");
     handleSubscriptionUpdated(log, em);
   } else if (topic === subControllerAbi.events.ChargeRequestRelayed.topic) {
+    console.log("Charge Request Relayed: ", log.block, new Date().toISOString(), "\n");
     handleChargeRequestRelayed(log, em);
   } else if (topic === subControllerAbi.events.ChargeConfirmed.topic) {
+    console.log("Charge Confirmed: ", log.block, new Date().toISOString(), "\n");
     handleChargeConfirmed(log, em);
   }
 }
