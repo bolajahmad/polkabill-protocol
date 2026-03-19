@@ -4,14 +4,14 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const MerchantRegistryModule = buildModule("MerchantRegistryMod", (m) => {
-    const chainReg = "0xbBa26e6278D6eD710f881633E780A9C3b23a3BAb";
-    const subManager = "0xc1c8c9b92AB6083609E29193929852883c66D32a";
+    const chainReg = "0x97e4b7577e4B3Db2F603054a6Aa4a9E2d6f14a00";
+    const subManager = "0x845589dbb1271BE563D768e93F5f59cdaA0fd192";
 
   const merchantReg = m.contract("MerchantRegistry", [chainReg, subManager]);
 
     // Update the subscription manager with the expected MerchantRegistry address
-    const subManagerContract = m.contractAt("SubscriptionManager", subManager);
-    m.call(subManagerContract, "updateMerchantRegistry", [merchantReg]);
+    // const subManagerContract = m.contractAt("SubscriptionManager", subManager);
+    // m.call(subManagerContract, "updateMerchantRegistry", [merchantReg]);
 
   return { merchant: merchantReg };
 });
