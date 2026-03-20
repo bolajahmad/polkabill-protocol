@@ -5,7 +5,7 @@
  * tracking via a _poller_status table. Reuses the same handlers, entity
  * management, and DB schema as the original Subsquid-based indexer.
  */
-import { DataSource, In } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { createPublicClient, http } from 'viem';
 import * as chainRegAbi from './abi/chain-registry';
 import * as merchantRegAbi from './abi/merchant-registry';
@@ -17,8 +17,10 @@ import {
   handleChainStatusUpdated,
   handleUpdateSupportedChainTokens,
 } from './handlers/adapter.handler';
-import { handleChargeConfirmed, handleChargeRequestRelayed } from './handlers/charge.handler';
+import { handleAdminChargeRequested } from './handlers/charge.handler';
 import {
+  handleAdminRelayMerchantUpdate,
+  handleAdminRelayTokenUpdate,
   handleMerchantCreated,
   handleMerchantStatusUpdated,
   handleMerchantUpdated,
@@ -33,11 +35,12 @@ import {
   handleUserSubscribed,
   handleUserUpdateSubscribedPlan,
 } from './handlers/subscriptions.handler';
-import { Adapter, Charge, Merchant, Payout, Plan, Subscription, User } from './model';
+import { Adapter, Charge, Merchant, Payout, Plan, Relay, Subscription, User } from './model';
 import { BatchCache } from './utils/batch-cache';
 import { collectIds } from './utils/collect-ids';
 import { EntityManager } from './utils/entity-manager';
 import { Contracts, networkConfig } from './utils/network-config';
+import { preloadEntities } from './utils/preload';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 const BATCH_SIZE = Number(process.env.POLL_BATCH_SIZE ?? 100);
@@ -66,7 +69,7 @@ function createDataSource(): DataSource {
     database: process.env.DB_NAME ?? 'squid',
     username: process.env.DB_USER ?? 'postgres',
     password: process.env.DB_PASS ?? 'postgres',
-    entities: [User, Merchant, Payout, Plan, Adapter, Subscription, Charge],
+    entities: [User, Merchant, Payout, Plan, Adapter, Subscription, Charge, Relay],
     synchronize: false,
   });
 }
@@ -96,47 +99,6 @@ async function setCursor(ds: DataSource, height: number): Promise<void> {
   );
 }
 
-// ─── Preload (adapted from original, uses DataSource directly) ──────────────
-async function preloadEntities(
-  ds: DataSource,
-  cache: BatchCache,
-  ids: ReturnType<typeof collectIds>,
-): Promise<void> {
-  if (ids.merchants.size) {
-    const rows = await ds
-      .getRepository(Merchant)
-      .findBy({ id: In([...ids.merchants]) });
-    rows.forEach((r) => cache.merchants.set(r.id, r));
-  }
-  if (ids.plans.size) {
-    const rows = await ds.getRepository(Plan).find({
-      where: { id: In([...ids.plans].map(String)) },
-      relations: { merchant: true },
-    });
-    rows.forEach((r) => cache.plans.set(r.id, r));
-  }
-  if (ids.adapters.size) {
-    const rows = await ds
-      .getRepository(Adapter)
-      .findBy({ id: In([...ids.adapters].map(String)) });
-    rows.forEach((a) => cache.adapters.set(a.id, a));
-  }
-  if (ids.payouts.size) {
-    const rows = await ds.getRepository(Payout).find({
-      where: { id: In([...ids.payouts]) },
-      relations: { merchant: true },
-    });
-    rows.forEach((p) => cache.payouts.set(p.id, p));
-  }
-  if (ids.subscriptions.size) {
-    const rows = await ds.getRepository(Subscription).find({
-      where: { id: In([...ids.subscriptions]) },
-      relations: { plan: true, user: true, merchant: true },
-    });
-    rows.forEach((s) => cache.subscriptions.set(s.id, s));
-  }
-}
-
 // ─── Save entities in FK-safe order ─────────────────────────────────────────
 async function saveEntities(
   ds: DataSource,
@@ -155,6 +117,7 @@ async function saveEntities(
   const plans = collect(em.plans);
   const subscriptions = collect(em.subscriptions);
   const charges = collect(em.charges);
+  const relays = collect(em.relays);
 
   if (users.length) await ds.getRepository(User).save(users);
   if (adapters.length) await ds.getRepository(Adapter).save(adapters);
@@ -164,6 +127,7 @@ async function saveEntities(
   if (subscriptions.length)
     await ds.getRepository(Subscription).save(subscriptions);
   if (charges.length) await ds.getRepository(Charge).save(charges);
+  if (relays.length) await ds.getRepository(Relay).save(relays);
 }
 
 // ─── Process a single log (same logic as the original main.ts) ──────────────
@@ -214,13 +178,16 @@ function processLog(log: IndexerLog, em: EntityManager): void {
   } else if (topic === subManagerAbi.events.SubscriptionUpdated.topic) {
     console.log("User Subscription Updated: ", log.block, new Date().toISOString(), "\n");
     handleSubscriptionUpdated(log, em);
-  } else if (topic === subControllerAbi.events.ChargeRequestRelayed.topic) {
-    console.log("Charge Request Relayed: ", log.block, new Date().toISOString(), "\n");
-    handleChargeRequestRelayed(log, em);
-  } else if (topic === subControllerAbi.events.ChargeConfirmed.topic) {
-    console.log("Charge Confirmed: ", log.block, new Date().toISOString(), "\n");
-    handleChargeConfirmed(log, em);
-  }
+  } else if (topic === subControllerAbi.events.TokenUpdateRequested.topic) {
+    console.log("Subscription Token Update Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminRelayTokenUpdate(log, em);
+  } else if (topic === subControllerAbi.events.MerchantUpdateRequested.topic) {
+    console.log("Subscription Merchant Update Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminRelayMerchantUpdate(log, em);
+  } else if (topic === subControllerAbi.events.ChargeRequested.topic) {
+    console.log("Subscription Charge Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminChargeRequested(log, em);
+   }
 }
 
 // ─── Fetch logs via eth_getLogs for a block range ───────────────────────────

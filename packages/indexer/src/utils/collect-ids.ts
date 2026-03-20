@@ -1,10 +1,11 @@
 import { Log } from '@subsquid/evm-processor';
+import { encodePacked, keccak256 } from 'viem';
 import * as chainRegAbi from '../abi/chain-registry';
 import * as merchantRegAbi from '../abi/merchant-registry';
 import * as planRegAbi from '../abi/plan-registry';
+import * as subControllerAbi from '../abi/subscriptions-controller';
 import * as subManagerAbi from '../abi/subscriptions-manager';
 import { merchantPayoutId } from './helpers';
-// import * as subControllerAbi from "./abi/subscriptions-controller";
 
 export interface CollectedIds {
   merchants: Set<string>;
@@ -12,6 +13,9 @@ export interface CollectedIds {
   subscriptions: Set<string>;
   adapters: Set<bigint>;
   payouts: Set<string>;
+  relays: Set<string>;
+  users: Set<string>;
+  charges: Set<string>;
 }
 
 export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
@@ -20,6 +24,9 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
   const subscriptions = new Set<string>();
   const adapters = new Set<bigint>();
   const payouts = new Set<string>();
+  const relays = new Set<string>();
+  const users = new Set<string>();
+  const charges = new Set<string>();
 
   for (const block of blocks) {
     for (const log of block.logs) {
@@ -105,6 +112,14 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
           subscriptions.add(subId.toString());
           break;
         }
+        case subControllerAbi.events.ChargeConfirmed.topic: {
+          const { subId, cycle, chainId } = subControllerAbi.events.ChargeConfirmed.decode(log);
+          const chargeId = keccak256(
+            encodePacked(['string', 'uint256', 'uint256'], [subId.toString(), cycle, chainId]),
+          );
+          charges.add(chargeId);
+          break;
+        }
         default: {
           break;
         }
@@ -118,5 +133,8 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
     subscriptions,
     adapters,
     payouts,
+    charges,
+    users,
+    relays,
   };
 }

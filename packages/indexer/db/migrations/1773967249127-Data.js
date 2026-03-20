@@ -1,5 +1,5 @@
-module.exports = class Data1773815470574 {
-    name = 'Data1773815470574'
+module.exports = class Data1773967249127 {
+    name = 'Data1773967249127'
 
     async up(db) {
         await db.query(`CREATE TABLE "payout" ("id" character varying NOT NULL, "chain_id" integer NOT NULL, "address" text NOT NULL, "tokens" text array NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "merchant_id" character varying, CONSTRAINT "PK_1cb73ce021dc6618a3818b0a474" PRIMARY KEY ("id"))`)
@@ -22,6 +22,9 @@ module.exports = class Data1773815470574 {
         await db.query(`CREATE INDEX "IDX_5fde988e5d9b9a522d70ebec27" ON "subscription" ("plan_id") `)
         await db.query(`CREATE INDEX "IDX_ba5ed8bf81a04e5ce89cd7b55c" ON "subscription" ("pending_plan_id") `)
         await db.query(`CREATE TABLE "user" ("id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "relay" ("id" character varying NOT NULL, "type" text NOT NULL, "nonce" numeric NOT NULL, "token" text, "allow" boolean, "adapter_id" character varying, "merchant_id" character varying, CONSTRAINT "PK_78ebc9cfddf4292633b7ba57aee" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE INDEX "IDX_e3cd14b0fc9a9586aa0d2dda26" ON "relay" ("adapter_id") `)
+        await db.query(`CREATE INDEX "IDX_b9948c05b8f44f0b08fb341c47" ON "relay" ("merchant_id") `)
         await db.query(`ALTER TABLE "payout" ADD CONSTRAINT "FK_c851a628a7bb7b384a0d7786efd" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "plan" ADD CONSTRAINT "FK_9da5081f1e18e5ebf77321b83e7" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "charge" ADD CONSTRAINT "FK_6e759191242b1dd19f0ca4103d7" FOREIGN KEY ("subscription_id") REFERENCES "subscription"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
@@ -30,6 +33,8 @@ module.exports = class Data1773815470574 {
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_87834986f9c2f3a41c80e9c9c62" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_5fde988e5d9b9a522d70ebec27c" FOREIGN KEY ("plan_id") REFERENCES "plan"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "subscription" ADD CONSTRAINT "FK_ba5ed8bf81a04e5ce89cd7b55c1" FOREIGN KEY ("pending_plan_id") REFERENCES "plan"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
+        await db.query(`ALTER TABLE "relay" ADD CONSTRAINT "FK_e3cd14b0fc9a9586aa0d2dda267" FOREIGN KEY ("adapter_id") REFERENCES "adapter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
+        await db.query(`ALTER TABLE "relay" ADD CONSTRAINT "FK_b9948c05b8f44f0b08fb341c47d" FOREIGN KEY ("merchant_id") REFERENCES "merchant"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
     }
 
     async down(db) {
@@ -53,6 +58,9 @@ module.exports = class Data1773815470574 {
         await db.query(`DROP INDEX "public"."IDX_5fde988e5d9b9a522d70ebec27"`)
         await db.query(`DROP INDEX "public"."IDX_ba5ed8bf81a04e5ce89cd7b55c"`)
         await db.query(`DROP TABLE "user"`)
+        await db.query(`DROP TABLE "relay"`)
+        await db.query(`DROP INDEX "public"."IDX_e3cd14b0fc9a9586aa0d2dda26"`)
+        await db.query(`DROP INDEX "public"."IDX_b9948c05b8f44f0b08fb341c47"`)
         await db.query(`ALTER TABLE "payout" DROP CONSTRAINT "FK_c851a628a7bb7b384a0d7786efd"`)
         await db.query(`ALTER TABLE "plan" DROP CONSTRAINT "FK_9da5081f1e18e5ebf77321b83e7"`)
         await db.query(`ALTER TABLE "charge" DROP CONSTRAINT "FK_6e759191242b1dd19f0ca4103d7"`)
@@ -61,5 +69,7 @@ module.exports = class Data1773815470574 {
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_87834986f9c2f3a41c80e9c9c62"`)
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_5fde988e5d9b9a522d70ebec27c"`)
         await db.query(`ALTER TABLE "subscription" DROP CONSTRAINT "FK_ba5ed8bf81a04e5ce89cd7b55c1"`)
+        await db.query(`ALTER TABLE "relay" DROP CONSTRAINT "FK_e3cd14b0fc9a9586aa0d2dda267"`)
+        await db.query(`ALTER TABLE "relay" DROP CONSTRAINT "FK_b9948c05b8f44f0b08fb341c47d"`)
     }
 }

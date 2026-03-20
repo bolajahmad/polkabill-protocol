@@ -1,7 +1,8 @@
-import { EntityManager } from "../utils/entity-manager";
-import { merchantPayoutId } from "../utils/helpers";
 import * as merchantRegAbi from "../abi/merchant-registry";
+import * as subControllerAbi from "../abi/subscriptions-controller";
 import { Merchant, Payout, Status } from "../model";
+import { EntityManager } from "../utils/entity-manager";
+import { merchantPayoutId, relayAdminTokenUpdateId, relayMerchantUpdateId } from "../utils/helpers";
 
 export function handleMerchantCreated(log: any, em: EntityManager) {
   const { mId, metadata } = merchantRegAbi.events.MerchantCreated.decode(log);
@@ -130,4 +131,51 @@ export function handleTokensAdded(log: any, em: EntityManager) {
     tokens: updatedTokens,
     updatedAt: new Date(),
   });
+}
+
+export function handleAdminRelayMerchantUpdate(log: any, em: EntityManager) {
+  const { chainId, merchant: mid, payout, nonce } = subControllerAbi.events.MerchantUpdateRequested.decode(log);
+
+  const relayId = relayMerchantUpdateId(mid as `0x${string}`, payout as `0x${string}`, nonce);
+  const relay = em.getRelay(relayId);
+
+  const merchant = em.getMerchant(mid.toLowerCase());
+  const chain = em.getAdapter(chainId.toString());
+  if (!merchant || !chain) return;
+
+  if (!relay) {
+    em.createRelay({
+      id: relayId,
+      type: "MERCHANT_PAYOUT",
+      merchant,
+      adapter: chain,
+      nonce: nonce,
+      allow: null,
+      token: null
+    })
+    return;
+  };
+}
+
+export function  handleAdminRelayTokenUpdate(log: any, em: EntityManager) {
+  const { allowed, chainId, nonce, token } = subControllerAbi.events.TokenUpdateRequested.decode(log);
+
+  const relayId = relayAdminTokenUpdateId(token as `0x${string}`, allowed, nonce);
+    const relay = em.getRelay(relayId);
+
+  const chain = em.getAdapter(chainId.toString());
+  if (!chain) return;
+
+  if (!relay) {
+    em.createRelay({
+      id: relayId,
+      type: "TOKEN_SUPPORT",
+      adapter: chain,
+      nonce: nonce,
+      allow: allowed,
+      merchant: null,
+      token: token as `0x${string}`,
+    })
+    return;
+  };
 }

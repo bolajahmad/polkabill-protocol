@@ -1,4 +1,4 @@
-import { Merchant, Plan, Adapter, Payout, Subscription, Charge, User } from "../model";
+import { Adapter, Charge, Merchant, Payout, Plan, Relay, Subscription, User } from "../model";
 
 export class BatchCache {
   merchants = new Map<string, Merchant>();
@@ -8,4 +8,5 @@ export class BatchCache {
   subscriptions = new Map<string, Subscription>();
   charges = new Map<string, Charge>();
   users = new Map<string, User>();
+  relays = new Map<string, Relay>();
 }

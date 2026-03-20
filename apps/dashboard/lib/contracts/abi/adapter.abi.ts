@@ -1,17 +1,39 @@
 export const BillingAdapterContractABI = [
   {
     inputs: [],
-    name: 'InvalidInitialization',
+    stateMutability: 'nonpayable',
+    type: 'constructor',
+  },
+  {
+    inputs: [],
+    name: 'ECDSAInvalidSignature',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'length',
+        type: 'uint256',
+      },
+    ],
+    name: 'ECDSAInvalidSignatureLength',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 's',
+        type: 'bytes32',
+      },
+    ],
+    name: 'ECDSAInvalidSignatureS',
     type: 'error',
   },
   {
     inputs: [],
-    name: 'InvalidRequestType',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'NotInitializing',
+    name: 'InvalidShortString',
     type: 'error',
   },
   {
@@ -53,44 +75,15 @@ export const BillingAdapterContractABI = [
     type: 'error',
   },
   {
-    inputs: [],
-    name: 'UnauthorizedCall',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'UnexpectedCall',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'UnregisteredSource',
-    type: 'error',
-  },
-  {
-    anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: 'uint256',
-        name: 'subscriptionId',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'billingCycle',
-        type: 'uint256',
-      },
-      {
-        indexed: true,
-        internalType: 'bytes32',
-        name: 'commitmentId',
-        type: 'bytes32',
+        internalType: 'string',
+        name: 'str',
+        type: 'string',
       },
     ],
-    name: 'ChargeDispatchSent',
-    type: 'event',
+    name: 'StringTooLong',
+    type: 'error',
   },
   {
     anonymous: false,
@@ -98,13 +91,13 @@ export const BillingAdapterContractABI = [
       {
         indexed: true,
         internalType: 'uint256',
-        name: 'subscriptionId',
+        name: 'subId',
         type: 'uint256',
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: 'uint256',
-        name: 'billingCycle',
+        name: 'cycle',
         type: 'uint256',
       },
     ],
@@ -113,17 +106,17 @@ export const BillingAdapterContractABI = [
   },
   {
     anonymous: false,
+    inputs: [],
+    name: 'EIP712DomainChanged',
+    type: 'event',
+  },
+  {
+    anonymous: false,
     inputs: [
       {
         indexed: false,
         internalType: 'uint256',
-        name: 'fee',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'oldFee',
+        name: 'newFee',
         type: 'uint256',
       },
     ],
@@ -135,12 +128,18 @@ export const BillingAdapterContractABI = [
     inputs: [
       {
         indexed: false,
-        internalType: 'uint64',
-        name: 'version',
-        type: 'uint64',
+        internalType: 'address',
+        name: 'merchant',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'payout',
+        type: 'address',
       },
     ],
-    name: 'Initialized',
+    name: 'MerchantUpdated',
     type: 'event',
   },
   {
@@ -167,37 +166,6 @@ export const BillingAdapterContractABI = [
     inputs: [
       {
         indexed: false,
-        internalType: 'uint256',
-        name: 'chainId',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'bool',
-        name: 'native',
-        type: 'bool',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'oldChainId',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'bool',
-        name: 'oldNative',
-        type: 'bool',
-      },
-    ],
-    name: 'SourceChainUpdated',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
         internalType: 'address',
         name: 'token',
         type: 'address',
@@ -205,12 +173,110 @@ export const BillingAdapterContractABI = [
       {
         indexed: false,
         internalType: 'bool',
-        name: 'active',
+        name: 'allowed',
         type: 'bool',
       },
     ],
     name: 'TokenUpdated',
     type: 'event',
+  },
+  {
+    inputs: [],
+    name: 'eip712Domain',
+    outputs: [
+      {
+        internalType: 'bytes1',
+        name: 'fields',
+        type: 'bytes1',
+      },
+      {
+        internalType: 'string',
+        name: 'name',
+        type: 'string',
+      },
+      {
+        internalType: 'string',
+        name: 'version',
+        type: 'string',
+      },
+      {
+        internalType: 'uint256',
+        name: 'chainId',
+        type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: 'verifyingContract',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes32',
+        name: 'salt',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'extensions',
+        type: 'uint256[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'subId',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'cycle',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'amount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'subscriber',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'token',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'merchant',
+            type: 'address',
+          },
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+        ],
+        internalType: 'struct BillingAdapter.Charge',
+        name: 'c',
+        type: 'tuple',
+      },
+      {
+        internalType: 'bytes',
+        name: 'sig',
+        type: 'bytes',
+      },
+    ],
+    name: 'executeChargeWithSig',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
   {
     inputs: [
@@ -220,69 +286,7 @@ export const BillingAdapterContractABI = [
         type: 'bytes32',
       },
     ],
-    name: 'charges',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'feeToken',
-    outputs: [
-      {
-        internalType: 'contract IERC20',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'host',
-    outputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: '_h',
-        type: 'address',
-      },
-      {
-        internalType: 'bytes',
-        name: '_hub',
-        type: 'bytes',
-      },
-      {
-        internalType: 'address',
-        name: '_fee',
-        type: 'address',
-      },
-    ],
-    name: 'initialize',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'nativeAdapter',
+    name: 'executedCharge',
     outputs: [
       {
         internalType: 'bool',
@@ -296,405 +300,52 @@ export const BillingAdapterContractABI = [
   {
     inputs: [
       {
-        components: [
-          {
-            components: [
-              {
-                internalType: 'bytes',
-                name: 'source',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'dest',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'nonce',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'from',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'to',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'timeoutTimestamp',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'body',
-                type: 'bytes',
-              },
-            ],
-            internalType: 'struct PostRequest',
-            name: 'request',
-            type: 'tuple',
-          },
-          {
-            internalType: 'address',
-            name: 'relayer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct IncomingPostRequest',
-        name: '_incoming',
-        type: 'tuple',
-      },
-    ],
-    name: 'onAccept',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: 'bytes',
-                    name: 'source',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'dest',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'uint64',
-                    name: 'nonce',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'address',
-                    name: 'from',
-                    type: 'address',
-                  },
-                  {
-                    internalType: 'uint64',
-                    name: 'timeoutTimestamp',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'bytes[]',
-                    name: 'keys',
-                    type: 'bytes[]',
-                  },
-                  {
-                    internalType: 'uint64',
-                    name: 'height',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'context',
-                    type: 'bytes',
-                  },
-                ],
-                internalType: 'struct GetRequest',
-                name: 'request',
-                type: 'tuple',
-              },
-              {
-                components: [
-                  {
-                    internalType: 'bytes',
-                    name: 'key',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'value',
-                    type: 'bytes',
-                  },
-                ],
-                internalType: 'struct StorageValue[]',
-                name: 'values',
-                type: 'tuple[]',
-              },
-            ],
-            internalType: 'struct GetResponse',
-            name: 'response',
-            type: 'tuple',
-          },
-          {
-            internalType: 'address',
-            name: 'relayer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct IncomingGetResponse',
+        internalType: 'bytes32',
         name: '',
-        type: 'tuple',
+        type: 'bytes32',
       },
     ],
-    name: 'onGetResponse',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
+    name: 'executedRelay',
+    outputs: [
       {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'source',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'nonce',
-            type: 'uint64',
-          },
-          {
-            internalType: 'address',
-            name: 'from',
-            type: 'address',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeoutTimestamp',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes[]',
-            name: 'keys',
-            type: 'bytes[]',
-          },
-          {
-            internalType: 'uint64',
-            name: 'height',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes',
-            name: 'context',
-            type: 'bytes',
-          },
-        ],
-        internalType: 'struct GetRequest',
+        internalType: 'bool',
         name: '',
-        type: 'tuple',
+        type: 'bool',
       },
     ],
-    name: 'onGetTimeout',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
+    inputs: [],
+    name: 'fee',
+    outputs: [
       {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'source',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'nonce',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes',
-            name: 'from',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'to',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeoutTimestamp',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes',
-            name: 'body',
-            type: 'bytes',
-          },
-        ],
-        internalType: 'struct PostRequest',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'onPostRequestTimeout',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: 'bytes',
-                    name: 'source',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'dest',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'uint64',
-                    name: 'nonce',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'from',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'to',
-                    type: 'bytes',
-                  },
-                  {
-                    internalType: 'uint64',
-                    name: 'timeoutTimestamp',
-                    type: 'uint64',
-                  },
-                  {
-                    internalType: 'bytes',
-                    name: 'body',
-                    type: 'bytes',
-                  },
-                ],
-                internalType: 'struct PostRequest',
-                name: 'request',
-                type: 'tuple',
-              },
-              {
-                internalType: 'bytes',
-                name: 'response',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'timeoutTimestamp',
-                type: 'uint64',
-              },
-            ],
-            internalType: 'struct PostResponse',
-            name: 'response',
-            type: 'tuple',
-          },
-          {
-            internalType: 'address',
-            name: 'relayer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct IncomingPostResponse',
+        internalType: 'uint256',
         name: '',
-        type: 'tuple',
+        type: 'uint256',
       },
     ],
-    name: 'onPostResponse',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
       {
-        components: [
-          {
-            components: [
-              {
-                internalType: 'bytes',
-                name: 'source',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'dest',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'nonce',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'from',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'to',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'timeoutTimestamp',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'body',
-                type: 'bytes',
-              },
-            ],
-            internalType: 'struct PostRequest',
-            name: 'request',
-            type: 'tuple',
-          },
-          {
-            internalType: 'bytes',
-            name: 'response',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeoutTimestamp',
-            type: 'uint64',
-          },
-        ],
-        internalType: 'struct PostResponse',
+        internalType: 'address',
         name: '',
-        type: 'tuple',
+        type: 'address',
       },
     ],
-    name: 'onPostResponseTimeout',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    name: 'merchantPayout',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -711,376 +362,6 @@ export const BillingAdapterContractABI = [
     type: 'function',
   },
   {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'to',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'body',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'address',
-            name: 'payer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct DispatchPost',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'quote',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'height',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes[]',
-            name: 'keys',
-            type: 'bytes[]',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'bytes',
-            name: 'context',
-            type: 'bytes',
-          },
-        ],
-        internalType: 'struct DispatchGet',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'quote',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                internalType: 'bytes',
-                name: 'source',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'dest',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'nonce',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'from',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'to',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'timeoutTimestamp',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'body',
-                type: 'bytes',
-              },
-            ],
-            internalType: 'struct PostRequest',
-            name: 'request',
-            type: 'tuple',
-          },
-          {
-            internalType: 'bytes',
-            name: 'response',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'address',
-            name: 'payer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct DispatchPostResponse',
-        name: 'response',
-        type: 'tuple',
-      },
-    ],
-    name: 'quote',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'to',
-            type: 'bytes',
-          },
-          {
-            internalType: 'bytes',
-            name: 'body',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'address',
-            name: 'payer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct DispatchPost',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'quoteNative',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                internalType: 'bytes',
-                name: 'source',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'dest',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'nonce',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'from',
-                type: 'bytes',
-              },
-              {
-                internalType: 'bytes',
-                name: 'to',
-                type: 'bytes',
-              },
-              {
-                internalType: 'uint64',
-                name: 'timeoutTimestamp',
-                type: 'uint64',
-              },
-              {
-                internalType: 'bytes',
-                name: 'body',
-                type: 'bytes',
-              },
-            ],
-            internalType: 'struct PostRequest',
-            name: 'request',
-            type: 'tuple',
-          },
-          {
-            internalType: 'bytes',
-            name: 'response',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'address',
-            name: 'payer',
-            type: 'address',
-          },
-        ],
-        internalType: 'struct DispatchPostResponse',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'quoteNative',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'bytes',
-            name: 'dest',
-            type: 'bytes',
-          },
-          {
-            internalType: 'uint64',
-            name: 'height',
-            type: 'uint64',
-          },
-          {
-            internalType: 'bytes[]',
-            name: 'keys',
-            type: 'bytes[]',
-          },
-          {
-            internalType: 'uint64',
-            name: 'timeout',
-            type: 'uint64',
-          },
-          {
-            internalType: 'uint256',
-            name: 'fee',
-            type: 'uint256',
-          },
-          {
-            internalType: 'bytes',
-            name: 'context',
-            type: 'bytes',
-          },
-        ],
-        internalType: 'struct DispatchGet',
-        name: 'request',
-        type: 'tuple',
-      },
-    ],
-    name: 'quoteNative',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
     inputs: [],
     name: 'renounceOwnership',
     outputs: [],
@@ -1088,13 +369,101 @@ export const BillingAdapterContractABI = [
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'sourceChainId',
-    outputs: [
+    inputs: [
       {
         internalType: 'uint256',
-        name: '',
+        name: '_fee',
         type: 'uint256',
+      },
+    ],
+    name: 'setFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'merchant',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'payout',
+        type: 'address',
+      },
+      {
+        internalType: 'uint256',
+        name: 'nonce',
+        type: 'uint256',
+      },
+      {
+        internalType: 'bytes',
+        name: 'sig',
+        type: 'bytes',
+      },
+    ],
+    name: 'setMerchantWithSig',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'token',
+        type: 'address',
+      },
+      {
+        internalType: 'bool',
+        name: 'allowed',
+        type: 'bool',
+      },
+      {
+        internalType: 'uint256',
+        name: 'nonce',
+        type: 'uint256',
+      },
+      {
+        internalType: 'bytes',
+        name: 'sig',
+        type: 'bytes',
+      },
+    ],
+    name: 'setTokenWithSig',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'signer',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    name: 'supportedToken',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
       },
     ],
     stateMutability: 'view',
@@ -1117,43 +486,31 @@ export const BillingAdapterContractABI = [
     inputs: [
       {
         internalType: 'uint256',
-        name: '_fee',
+        name: '',
         type: 'uint256',
       },
     ],
-    name: 'updateFee',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint256',
-        name: '_chainId',
-        type: 'uint256',
-      },
+    name: 'usedNonce',
+    outputs: [
       {
         internalType: 'bool',
-        name: '_native',
+        name: '',
         type: 'bool',
       },
     ],
-    name: 'updateSourceChain',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
       {
         internalType: 'address',
-        name: 'token',
+        name: '_token',
         type: 'address',
       },
       {
         internalType: 'address',
-        name: 'to',
+        name: '_to',
         type: 'address',
       },
     ],

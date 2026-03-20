@@ -93,9 +93,9 @@ export function makeProcessor(
         address: [config.contract[Contracts.SUB_CONTROLLER]],
         topic0: [
           subControllerAbi.events.ChargeConfirmed.topic,
-          subControllerAbi.events.ChargeRequestRelayed.topic,
-          subControllerAbi.events.TokenUpdateRelayed.topic,
-          subControllerAbi.events.MerchantProfileUpdated.topic,
+          subControllerAbi.events.MerchantUpdateRequested.topic,
+          subControllerAbi.events.ChargeRequested.topic,
+          subControllerAbi.events.TokenUpdateRequested.topic
         ],
       })
   );

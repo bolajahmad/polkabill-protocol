@@ -71,3 +71,38 @@ export function formatDuration(seconds: number): string {
   }
   return `${seconds} sec${seconds !== 1 ? "s" : ""}`;
 }
+
+export const TokenSignatureTypes = {
+  TokenUpdate: [
+    { name: "token", type: "address" },
+    { name: "allowed", type: "bool" },
+    { name: "nonce", type: "uint256" },
+  ],
+}; 
+
+export const MerchantSignatureTypes = {
+  MerchantUpdate: [
+    { name: "merchant", type: "address" },
+    { name: "payout", type: "address" },
+    { name: "nonce", type: "uint256" },
+  ],
+}
+
+export const ChargeRequestSignatureTypes = {
+  Charge: [
+    { name: "subId", type: "uint256" },
+    { name: "cycle", type: "uint256" },
+    { name: "amount", type: "uint256" },
+    { name: "subscriber", type: "address" },
+    { name: "token", type: "address" },
+    { name: "merchant", type: "address" },
+    { name: "nonce", type: "uint256" },
+  ],
+}
+
+export const getDomain = (chainId: number, verifyingContract: `0x${string}`) => ({
+  name: "BillingAdapter",
+  version: "1",
+  chainId,
+  verifyingContract,
+})

@@ -1,4 +1,4 @@
-import { Adapter, Charge, Merchant, Payout, Plan, Subscription, User } from "../model";
+import { Adapter, Charge, Merchant, Payout, Plan, Relay, Subscription, User } from "../model";
 import { BatchCache } from "./batch-cache";
 import { merchantPayoutId } from "./helpers";
 
@@ -17,6 +17,7 @@ export class EntityManager {
   public payouts = new Map<string, EntityState<Payout>>();
   public users = new Map<string, EntityState<User>>();
   public charges = new Map<string, EntityState<Charge>>();
+  public relays = new Map<string, EntityState<Relay>>(); // For future use
 
   constructor(private readonly cache: BatchCache) {
     for (const [id, entity] of cache.merchants) {
@@ -39,6 +40,9 @@ export class EntityManager {
     }
     for (const [id, entity] of cache.charges) {
         this.register(this.charges, id, entity, true);
+    }
+    for (const [id, entity] of cache.relays) {
+        this.register(this.relays, id, entity, true);
     }
   }
 
@@ -284,5 +288,25 @@ export class EntityManager {
         this.markDirty(this.subscriptions, entity.id);
       }
     });
+  }
+
+  getRelay(id: string) {
+    const r = this.relays.get(id);
+    if (r) {
+      return r.entity;
+    }
+  }
+
+  createRelay(r: Relay) {
+    this.register(this.relays, r.id, r, true);
+    return r;
+  }
+
+  updateRelay(id: string, patch: Partial<Relay>) {
+    const relay = this.getRelay(id);
+    if (!relay) return;
+
+    Object.assign(relay, patch);
+    this.markDirty(this.relays, id);
   }
 }

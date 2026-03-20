@@ -1,9 +1,9 @@
 import { passetHub } from '../wallet/config';
 
-export const MerchantContractAddress = '0x6D73534191353E714F607D6b3C08425987131C19';
-export const ChainRegistryContractAddress = '0xbBa26e6278D6eD710f881633E780A9C3b23a3BAb';
-export const PlanRegistryContractAddress = '0x1d8C64CA9E08AbF56b832edC9606c4Eec7889059';
-export const SubscriptionManagerContractAddress = '0xc1c8c9b92AB6083609E29193929852883c66D32a';
-export const SubscriptionControllerContractAddress = '0x75704c73bdD5Ce0dd843ea4AAa375099c133E669';
+export const MerchantContractAddress = '0x0D0f40bb15cd1AdC996d3a5Ae6d48dd4A4746940';
+export const ChainRegistryContractAddress = '0x97e4b7577e4B3Db2F603054a6Aa4a9E2d6f14a00';
+export const PlanRegistryContractAddress = '0xa6b4f8687040E31707F5232C9E96A062dE32e960';
+export const SubscriptionManagerContractAddress = '0x845589dbb1271BE563D768e93F5f59cdaA0fd192';
+export const SubscriptionControllerContractAddress = '0x2EC29313fbC5Fd488195584E717b0aa9ca3812c3';
 
 export const BASE_CHAIN = passetHub;

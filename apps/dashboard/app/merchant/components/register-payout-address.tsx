@@ -69,6 +69,7 @@ export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Pro
     queryFn: async () => fetch('/api/admin/chains').then(res => res.json()),
   });
   const adapters = adapterData?.data || [];
+  console.log({ adapters});
 
   const handleSubmit = (data: Record<string, string | number>) => {
     // Call API to update payout address

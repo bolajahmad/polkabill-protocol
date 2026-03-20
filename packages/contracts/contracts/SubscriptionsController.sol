@@ -98,7 +98,7 @@ contract SubscriptionsController is EIP712, ReentrancyGuard {
         emit ChargeRequested(chainId, subId, cycle, body);
     }
 
-    function requestTokenUpdate(
+    function relayTokenUpdate(
         uint256 chainId,
         address adapter,
         bool _native,
