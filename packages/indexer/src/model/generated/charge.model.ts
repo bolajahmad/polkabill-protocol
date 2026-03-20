@@ -1,14 +1,14 @@
 import {
-    BigIntColumn as BigIntColumn_,
-    BooleanColumn as BooleanColumn_,
-    DateTimeColumn as DateTimeColumn_,
-    Entity as Entity_,
-    Index as Index_,
-    IntColumn as IntColumn_,
-    JoinColumn as JoinColumn_,
-    ManyToOne as ManyToOne_,
-    PrimaryColumn as PrimaryColumn_,
-    StringColumn as StringColumn_,
+  BigIntColumn as BigIntColumn_,
+  BooleanColumn as BooleanColumn_,
+  DateTimeColumn as DateTimeColumn_,
+  Entity as Entity_,
+  Index as Index_,
+  IntColumn as IntColumn_,
+  JoinColumn as JoinColumn_,
+  ManyToOne as ManyToOne_,
+  PrimaryColumn as PrimaryColumn_,
+  StringColumn as StringColumn_,
 } from '@subsquid/typeorm-store';
 import { Adapter } from './adapter.model';
 import { Subscription } from './subscription.model';
@@ -46,7 +46,7 @@ export class Charge {
   @StringColumn_({ name: 'payout_address', nullable: false })
   payoutAddress!: string;
 
-  @BigIntColumn_({ nullable: false })
+  @BigIntColumn_({ name: "billing_cycle", nullable: false })
   billingCycle!: bigint;
 
   @Index_()
@@ -61,4 +61,7 @@ export class Charge {
 
   @DateTimeColumn_({ name: 'created_at', nullable: false })
   createdAt!: Date;
+
+  @BigIntColumn_({ nullable: false })
+  nonce!: bigint;
 }

@@ -78,6 +78,12 @@
           "internalType": "uint256",
           "name": "cycle",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nonce",
+          "type": "uint256"
         }
       ],
       "name": "ChargeConfirmed",
@@ -296,9 +302,9 @@
       "name": "processedCharge",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "uint8",
           "name": "",
-          "type": "bool"
+          "type": "uint8"
         }
       ],
       "stateMutability": "view",
@@ -378,7 +384,7 @@
           "type": "bytes"
         }
       ],
-      "name": "requestTokenUpdate",
+      "name": "relayTokenUpdate",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

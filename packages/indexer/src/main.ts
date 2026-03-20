@@ -17,7 +17,7 @@ import {
   handleChainStatusUpdated,
   handleUpdateSupportedChainTokens,
 } from './handlers/adapter.handler';
-import { handleAdminChargeRequested } from './handlers/charge.handler';
+import { handleAdminChargeRequested, handleChargeConfirmed } from './handlers/charge.handler';
 import {
   handleAdminRelayMerchantUpdate,
   handleAdminRelayTokenUpdate,
@@ -187,6 +187,9 @@ function processLog(log: IndexerLog, em: EntityManager): void {
   } else if (topic === subControllerAbi.events.ChargeRequested.topic) {
     console.log("Subscription Charge Requested: ", log.block, new Date().toISOString(), "\n");
     handleAdminChargeRequested(log, em);
+   } else if (topic === subControllerAbi.events.ChargeConfirmed.topic) {
+    console.log("Subscription Charge Confirmed: ", log.block, new Date().toISOString(), "\n");
+    handleChargeConfirmed(log, em);
    }
 }
 

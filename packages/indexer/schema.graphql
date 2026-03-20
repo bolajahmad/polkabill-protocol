@@ -99,6 +99,7 @@ type Charge @entity {
   blockNumber: BigInt!
   success: Boolean!
   createdAt: DateTime!
+  nonce: BigInt!
 }
 
 type Relay @entity {

@@ -1,11 +1,11 @@
 import { assertNotNull } from "@subsquid/util-internal";
 
 export enum Contracts {
-  SUB_MANAGER = "0x845589dbb1271BE563D768e93F5f59cdaA0fd192",
-  PLAN_REGISTRY = "0xa6b4f8687040E31707F5232C9E96A062dE32e960",
-  CHAIN_REGISTRY = "0x97e4b7577e4B3Db2F603054a6Aa4a9E2d6f14a00",
-  SUB_CONTROLLER = "0x2EC29313fbC5Fd488195584E717b0aa9ca3812c3",
-  MERCHANT_REGISTRY = "0x0D0f40bb15cd1AdC996d3a5Ae6d48dd4A4746940",
+  SUB_MANAGER = "0x515368Cca3a1224c1e4185FC7f2169FA2901cD43",
+  PLAN_REGISTRY = "0xD3753af5C2b8Dffa9fB87503425A2da54b713827",
+  CHAIN_REGISTRY = "0x9b196e82E33a3f944EB210CCA73d818458463BB6",
+  SUB_CONTROLLER = "0xAC3Dfd48F6Ab7e7a775F750F4F3c2c9ae8037399",
+  MERCHANT_REGISTRY = "0xb1094842d12226911eBcD8B7c0bD5C73776E593a",
 }
 
 export type NetworkConfig = {
@@ -21,7 +21,7 @@ export const networkConfig: NetworkConfig = {
     "No RPC endpoint supplied via RPC_ASSETHUB_HTTP",
   ),
   finalityConfirmation: Number(process.env.FINALITY_CONFIRMATION ?? 10),
-  startAtBlock: 6598520,
+  startAtBlock: 6609580,
   contract: {
     [Contracts.SUB_MANAGER]: Contracts.SUB_MANAGER,
     [Contracts.PLAN_REGISTRY]: Contracts.PLAN_REGISTRY,

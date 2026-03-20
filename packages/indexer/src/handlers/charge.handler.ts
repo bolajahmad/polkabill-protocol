@@ -4,9 +4,9 @@ import { EntityManager } from '../utils/entity-manager';
 import { decodeChargeRequestParams } from '../utils/helpers';
 
 export function handleChargeConfirmed(log: any, em: EntityManager) {
-  const { cycle, chainId, subId } = subControllerAbi.events.ChargeConfirmed.decode(log);
+  const { cycle, chainId, subId, nonce } = subControllerAbi.events.ChargeConfirmed.decode(log);
 
-  const chargeId = keccak256(encodePacked(['string', 'uint256'], [subId.toString(), cycle]));
+  const chargeId = keccak256(encodePacked(['string', 'uint256', 'uint256'], [subId.toString(), cycle, nonce]));
 
   const charge = em.getCharge(chargeId);
   if (!charge) return;
@@ -14,20 +14,28 @@ export function handleChargeConfirmed(log: any, em: EntityManager) {
   em.updateCharge(chargeId, {
     success: true,
     chainId: Number(chainId),
+    nonce
   });
 }
 
 export function handleAdminChargeRequested(log: any, em: EntityManager) {
-  const { chainId, subId, cycle, data } = subControllerAbi.events.ChargeRequested.decode(log);
+  const {
+    chainId,
+    subId: nonce,
+    cycle,
+    data,
+  } = subControllerAbi.events.ChargeRequested.decode(log);
 
+  const { payout, price, subscriber, subId, token } = decodeChargeRequestParams(
+    data as `0x${string}`,
+  );
   const chargeId = keccak256(
-    encodePacked(['string', 'uint256', 'uint256'], [subId.toString(), cycle, chainId]),
+    encodePacked(['string', 'uint256', 'uint256'], [subId.toString(), cycle, nonce]),
   );
   const sub = em.getSubscription(subId.toString());
   const adapter = em.getAdapter(chainId.toString());
   if (!sub || !adapter) return;
 
-  const { payout, price, subscriber, token } = decodeChargeRequestParams(data as `0x${string}`);
   const user = em.getUser(subscriber.toLowerCase());
   if (!user) return;
 
@@ -39,6 +47,7 @@ export function handleAdminChargeRequested(log: any, em: EntityManager) {
       amount: price,
       txHash: log.transactionHash,
       blockNumber: log.block.height,
+      nonce,
     });
   } else {
     em.createCharge({
@@ -54,6 +63,7 @@ export function handleAdminChargeRequested(log: any, em: EntityManager) {
       blockNumber: log.block.height,
       success: false,
       createdAt: new Date(),
+      nonce,
     });
   }
 }

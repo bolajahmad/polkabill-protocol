@@ -120,6 +120,14 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
           charges.add(chargeId);
           break;
         }
+        case subControllerAbi.events.ChargeRequested.topic: {
+          const { subId, cycle, chainId } = subControllerAbi.events.ChargeRequested.decode(log);
+          const chargeId = keccak256(
+            encodePacked(['string', 'uint256', 'uint256'], [subId.toString(), cycle, chainId]),
+          );
+          charges.add(chargeId);
+          break;
+        }
         default: {
           break;
         }

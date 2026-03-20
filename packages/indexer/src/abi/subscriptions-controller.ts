@@ -3,7 +3,7 @@ import { event, fun, viewFun, indexed, ContractBase } from '@subsquid/evm-abi'
 import type { EventParams as EParams, FunctionArguments, FunctionReturn } from '@subsquid/evm-abi'
 
 export const events = {
-    ChargeConfirmed: event("0x2db06b3c04b68c96e2a63ff2345138426c37fb1b427aa36341c02a09fde075f6", "ChargeConfirmed(uint256,uint256,uint256)", {"chainId": indexed(p.uint256), "subId": indexed(p.uint256), "cycle": p.uint256}),
+    ChargeConfirmed: event("0x730ba1c6e9396a2128096f6029e773993afc67769f0cf2390c8d0e80b03eba3f", "ChargeConfirmed(uint256,uint256,uint256,uint256)", {"chainId": indexed(p.uint256), "subId": indexed(p.uint256), "cycle": p.uint256, "nonce": p.uint256}),
     ChargeRequested: event("0x0d2d06d1d38de9fc3bebc7cd6e8e79bb254178f26f9b9797ed27851163c10799", "ChargeRequested(uint256,uint256,uint256,bytes)", {"chainId": indexed(p.uint256), "subId": indexed(p.uint256), "cycle": p.uint256, "data": p.bytes}),
     EIP712DomainChanged: event("0x0a6387c9ea3628b88a633bb4f3b151770f70085117a15f9bf3787cda53f13d31", "EIP712DomainChanged()", {}),
     MerchantUpdateRequested: event("0x6c869ab36d2081c3640b4d85906803ee68e6fe5347fcefef5018e063be558c39", "MerchantUpdateRequested(uint256,address,address,address,uint256)", {"chainId": indexed(p.uint256), "adapter": indexed(p.address), "merchant": p.address, "payout": p.address, "nonce": p.uint256}),
@@ -14,10 +14,10 @@ export const functions = {
     confirmChargeWithSig: fun("0x0fb9e350", "confirmChargeWithSig((uint256,uint256,uint256),bytes)", {"cc": p.struct({"subId": p.uint256, "cycle": p.uint256, "nonce": p.uint256}), "sig": p.bytes}, ),
     eip712Domain: viewFun("0x84b0196e", "eip712Domain()", {}, {"fields": p.bytes1, "name": p.string, "version": p.string, "chainId": p.uint256, "verifyingContract": p.address, "salt": p.bytes32, "extensions": p.array(p.uint256)}),
     globalNonce: viewFun("0x37e23222", "globalNonce()", {}, p.uint256),
-    processedCharge: viewFun("0x4567907a", "processedCharge(bytes32)", {"_0": p.bytes32}, p.bool),
+    processedCharge: viewFun("0x4567907a", "processedCharge(bytes32)", {"_0": p.bytes32}, p.uint8),
     relayChargeRequest: fun("0x64e52788", "relayChargeRequest(uint256,address,bytes,bool)", {"chainId": p.uint256, "adapter": p.address, "body": p.bytes, "native": p.bool}, ),
     relayMerchantProfileUpdate: fun("0x3d453da4", "relayMerchantProfileUpdate(uint256,address,bytes)", {"chainId": p.uint256, "adapter": p.address, "_body": p.bytes}, ),
-    requestTokenUpdate: fun("0xf6958f87", "requestTokenUpdate(uint256,address,bool,bytes)", {"chainId": p.uint256, "adapter": p.address, "_native": p.bool, "_body": p.bytes}, ),
+    relayTokenUpdate: fun("0x3a358484", "relayTokenUpdate(uint256,address,bool,bytes)", {"chainId": p.uint256, "adapter": p.address, "_native": p.bool, "_body": p.bytes}, ),
     signer: viewFun("0x238ac933", "signer()", {}, p.address),
     subManager: viewFun("0x6632ba93", "subManager()", {}, p.address),
 }
@@ -71,8 +71,8 @@ export type RelayChargeRequestReturn = FunctionReturn<typeof functions.relayChar
 export type RelayMerchantProfileUpdateParams = FunctionArguments<typeof functions.relayMerchantProfileUpdate>
 export type RelayMerchantProfileUpdateReturn = FunctionReturn<typeof functions.relayMerchantProfileUpdate>
 
-export type RequestTokenUpdateParams = FunctionArguments<typeof functions.requestTokenUpdate>
-export type RequestTokenUpdateReturn = FunctionReturn<typeof functions.requestTokenUpdate>
+export type RelayTokenUpdateParams = FunctionArguments<typeof functions.relayTokenUpdate>
+export type RelayTokenUpdateReturn = FunctionReturn<typeof functions.relayTokenUpdate>
 
 export type SignerParams = FunctionArguments<typeof functions.signer>
 export type SignerReturn = FunctionReturn<typeof functions.signer>
