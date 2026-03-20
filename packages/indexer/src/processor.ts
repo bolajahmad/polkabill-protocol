@@ -16,11 +16,21 @@ export type Fields = typeof fields;
 export function makeProcessor(
   config: NetworkConfig,
 ): EvmBatchProcessor<Fields> {
+  const headPollInterval = Number(process.env.RPC_HEAD_POLL_INTERVAL_MS ?? 15000);
+
   return (
     new EvmBatchProcessor()
-      // .setGateway(config.gateway)
-      .setRpcEndpoint(config.rpcEndpoint)
-      .setFinalityConfirmation(250)
+      .setRpcEndpoint({
+        url: config.rpcEndpoint,
+        rateLimit: 5,
+        capacity: 1,
+        retryAttempts: 20,
+        maxBatchCallSize: 5
+      })
+      .setRpcDataIngestionSettings({
+        headPollInterval,
+      })
+      .setFinalityConfirmation(config.finalityConfirmation)
       // .setFields() is for choosing data fields for the selected data items.
       // Here we're requesting hashes of parent transaction for all event logs.
       .setFields({
@@ -28,7 +38,7 @@ export function makeProcessor(
           transactionHash: true,
         },
       })
-      .setBlockRange({ from: 38706644 }) // Starting block height. Can also specify "to" and "step".
+      .setBlockRange({ from: config.startAtBlock, to: undefined }) // Starting block height. Can also specify "to" and "step".
       // .addXXX() methods request data items. In this case we're asking for
       // Transfer(address,address,uint256) event logs emitted by the USDC contract.
       //
@@ -40,16 +50,18 @@ export function makeProcessor(
       // Other .addXXX() methods (.addTransaction(), .addTrace(), .addStateDiff()
       // on EVM) are similarly feature-rich.
       .addLog({
-        range: { from: 38706644 },
+        range: { from: config.startAtBlock },
         address: [config.contract[Contracts.SUB_MANAGER]],
         topic0: [
           subManagerAbi.events.Subscribed.topic,
+          subManagerAbi.events.PlanChangeScheduled.topic,
+          subManagerAbi.events.PlanChanged.topic,
           subManagerAbi.events.SubscriptionPaid.topic,
           subManagerAbi.events.SubscriptionUpdated.topic,
         ],
       })
       .addLog({
-        range: { from: 38706644 },
+        range: { from: config.startAtBlock },
         address: [config.contract[Contracts.MERCHANT_REGISTRY]],
         topic0: [
           merchantRegAbi.events.MerchantCreated.topic,
@@ -60,7 +72,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38706644 },
+        range: { from: config.startAtBlock },
         address: [config.contract[Contracts.PLAN_REGISTRY]],
         topic0: [
           planRegAbi.events.PlanCreated.topic,
@@ -68,7 +80,7 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38706644 },
+        range: { from: config.startAtBlock },
         address: [config.contract[Contracts.CHAIN_REGISTRY]],
         topic0: [
           chainRegAbi.events.ChainRegistered.topic,
@@ -77,13 +89,13 @@ export function makeProcessor(
         ],
       })
       .addLog({
-        range: { from: 38706644 },
+        range: { from: config.startAtBlock },
         address: [config.contract[Contracts.SUB_CONTROLLER]],
         topic0: [
           subControllerAbi.events.ChargeConfirmed.topic,
-          subControllerAbi.events.ChargeRequestRelayed.topic,
-          subControllerAbi.events.TokenUpdateRelayed.topic,
-          subControllerAbi.events.MerchantProfileUpdated.topic,
+          subControllerAbi.events.MerchantUpdateRequested.topic,
+          subControllerAbi.events.ChargeRequested.topic,
+          subControllerAbi.events.TokenUpdateRequested.topic
         ],
       })
   );

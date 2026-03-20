@@ -1,127 +1,321 @@
-// TypeormDatabase is the class responsible for data storage.
-import { TypeormDatabase } from "@subsquid/typeorm-store";
-import * as chainRegAbi from "./abi/chain-registry";
-import * as merchantRegAbi from "./abi/merchant-registry";
-import * as planRegAbi from "./abi/plan-registry";
-import * as subControllerAbi from "./abi/subscriptions-controller";
-import * as subManagerAbi from "./abi/subscriptions-manager";
+/**
+ * Custom resilient event poller — replaces the Subsquid EvmBatchProcessor.
+ *
+ * Uses eth_getLogs directly via viem to fetch contract events, with cursor
+ * tracking via a _poller_status table. Reuses the same handlers, entity
+ * management, and DB schema as the original Subsquid-based indexer.
+ */
+import { DataSource } from 'typeorm';
+import { createPublicClient, http } from 'viem';
+import * as chainRegAbi from './abi/chain-registry';
+import * as merchantRegAbi from './abi/merchant-registry';
+import * as planRegAbi from './abi/plan-registry';
+import * as subControllerAbi from './abi/subscriptions-controller';
+import * as subManagerAbi from './abi/subscriptions-manager';
 import {
   handleChainRegistered,
   handleChainStatusUpdated,
   handleUpdateSupportedChainTokens,
-} from "./handlers/adapter.handler";
-import { handleChargeConfirmed, handleChargeRequestRelayed } from "./handlers/charge.handler";
+} from './handlers/adapter.handler';
+import { handleAdminChargeRequested, handleChargeConfirmed } from './handlers/charge.handler';
 import {
+  handleAdminRelayMerchantUpdate,
+  handleAdminRelayTokenUpdate,
+  handleMerchantCreated,
   handleMerchantStatusUpdated,
   handleMerchantUpdated,
   handlePayoutAddressSet,
   handleTokensAdded,
-} from "./handlers/merchant.handler";
-import { handleCreatePlan, handlePlanUpdated } from "./handlers/plan.handler";
+} from './handlers/merchant.handler';
+import { handleCreatePlan, handlePlanUpdated } from './handlers/plan.handler';
 import {
   handlePlanChanged,
   handleSubscriptionPaid,
   handleSubscriptionUpdated,
   handleUserSubscribed,
   handleUserUpdateSubscribedPlan,
-} from "./handlers/subscriptions.handler";
-import {
-  Adapter,
-  Charge,
-  Merchant,
-  Payout,
-  Plan,
-  Subscription,
-  User
-} from "./model";
-import { makeProcessor } from "./processor";
-import { BatchCache } from "./utils/batch-cache";
-import { collectIds } from "./utils/collect-ids";
-import { EntityManager } from "./utils/entity-manager";
-import { networkConfig } from "./utils/network-config";
-import { preloadEntities } from "./utils/preload";
+} from './handlers/subscriptions.handler';
+import { Adapter, Charge, Merchant, Payout, Plan, Relay, Subscription, User } from './model';
+import { BatchCache } from './utils/batch-cache';
+import { collectIds } from './utils/collect-ids';
+import { EntityManager } from './utils/entity-manager';
+import { Contracts, networkConfig } from './utils/network-config';
+import { preloadEntities } from './utils/preload';
 
-async function processLog(log: any, store: EntityManager) {
-  if (log.topics[0] == merchantRegAbi.events.MerchantUpdated.topic) {
-    handleMerchantUpdated(log, store);
-  } else if (
-    log.topics[0] == merchantRegAbi.events.MerchantStatusUpdated.topic
-  ) {
-    handleMerchantStatusUpdated(log, store);
-  } else if (log.topics[0] == merchantRegAbi.events.PayoutAddressSet.topic) {
-    handlePayoutAddressSet(log, store);
-  } else if (log.topics[0] == merchantRegAbi.events.TokensAdded.topic) {
-    handleTokensAdded(log, store);
-  } else if (log.topics[0] == planRegAbi.events.PlanCreated.topic) {
-    handleCreatePlan(log, store);
-  } else if (log.topics[0] == planRegAbi.events.PlanUpdated.topic) {
-    handlePlanUpdated(log, store);
-  } else if (log.topics[0] == chainRegAbi.events.ChainRegistered.topic) {
-    handleChainRegistered(log, store);
-  } else if (log.topics[0] == chainRegAbi.events.ChainStatusUpdated.topic) {
-    handleChainStatusUpdated(log, store);
-  } else if (log.topics[0] == chainRegAbi.events.TokenSupportUpdated.topic) {
-    handleUpdateSupportedChainTokens(log, store);
-  } else if (log.topics[0] == subManagerAbi.events.Subscribed.topic) {
-    handleUserSubscribed(log, store);
-  } else if (log.topics[0] == subManagerAbi.events.PlanChangeScheduled.topic) {
-    handleUserUpdateSubscribedPlan(log, store);
-  } else if (log.topics[0] == subManagerAbi.events.PlanChanged.topic) {
-    handlePlanChanged(log, store);
-  } else if (log.topics[0] == subManagerAbi.events.SubscriptionPaid.topic) {
-    handleSubscriptionPaid(log, store);
-  } else if (log.topics[0] == subManagerAbi.events.SubscriptionUpdated.topic) {
-    handleSubscriptionUpdated(log, store);
-  } else if (log.topics[0] == subControllerAbi.events.ChargeRequestRelayed.topic) {
-    handleChargeRequestRelayed(log, store)
-  } else if (log.topics[0] == subControllerAbi.events.ChargeConfirmed.topic) {
-    handleChargeConfirmed(log, store)
-  } else {
-    return;
+// ─── Configuration ──────────────────────────────────────────────────────────
+const BATCH_SIZE = Number(process.env.POLL_BATCH_SIZE ?? 100);
+const POLL_INTERVAL = Number(process.env.POLL_INTERVAL_MS ?? 12_000);
+const RETRY_DELAY = 10_000;
+
+const CONTRACT_ADDRESSES = Object.values(Contracts).map(
+  (a) => a.toLowerCase() as `0x${string}`,
+);
+
+// ─── Shaped log compatible with existing handlers / collectIds ──────────────
+interface IndexerLog {
+  data: string;
+  topics: string[];
+  address: string;
+  transactionHash: string;
+  block: { height: number; timestamp: number };
+}
+
+// ─── Database ───────────────────────────────────────────────────────────────
+function createDataSource(): DataSource {
+  return new DataSource({
+    type: 'postgres',
+    host: process.env.DB_HOST ?? 'localhost',
+    port: Number(process.env.DB_PORT ?? 5432),
+    database: process.env.DB_NAME ?? 'squid',
+    username: process.env.DB_USER ?? 'postgres',
+    password: process.env.DB_PASS ?? 'postgres',
+    entities: [User, Merchant, Payout, Plan, Adapter, Subscription, Charge, Relay],
+    synchronize: false,
+  });
+}
+
+// ─── Cursor tracking ────────────────────────────────────────────────────────
+async function ensureCursorTable(ds: DataSource): Promise<void> {
+  await ds.query(`
+    CREATE TABLE IF NOT EXISTS _poller_status (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      height INT NOT NULL
+    )
+  `);
+}
+
+async function getCursor(ds: DataSource): Promise<number> {
+  const rows = await ds.query(
+    `SELECT height FROM _poller_status WHERE id = 'main'`,
+  );
+  return rows.length > 0 ? rows[0].height : networkConfig.startAtBlock - 1;
+}
+
+async function setCursor(ds: DataSource, height: number): Promise<void> {
+  await ds.query(
+    `INSERT INTO _poller_status (id, height) VALUES ('main', $1)
+     ON CONFLICT (id) DO UPDATE SET height = $1`,
+    [height],
+  );
+}
+
+// ─── Save entities in FK-safe order ─────────────────────────────────────────
+async function saveEntities(
+  ds: DataSource,
+  em: EntityManager,
+): Promise<void> {
+  const collect = <T>(map: Map<string, { entity: T }>): T[] => {
+    const arr: T[] = [];
+    map.forEach(({ entity }) => arr.push(entity));
+    return arr;
+  };
+
+  const users = collect(em.users);
+  const adapters = collect(em.adapters);
+  const merchants = collect(em.merchants);
+  const payouts = collect(em.payouts);
+  const plans = collect(em.plans);
+  const subscriptions = collect(em.subscriptions);
+  const charges = collect(em.charges);
+  const relays = collect(em.relays);
+
+  if (users.length) await ds.getRepository(User).save(users);
+  if (adapters.length) await ds.getRepository(Adapter).save(adapters);
+  if (merchants.length) await ds.getRepository(Merchant).save(merchants);
+  if (payouts.length) await ds.getRepository(Payout).save(payouts);
+  if (plans.length) await ds.getRepository(Plan).save(plans);
+  if (subscriptions.length)
+    await ds.getRepository(Subscription).save(subscriptions);
+  if (charges.length) await ds.getRepository(Charge).save(charges);
+  if (relays.length) await ds.getRepository(Relay).save(relays);
+}
+
+// ─── Process a single log (same logic as the original main.ts) ──────────────
+function processLog(log: IndexerLog, em: EntityManager): void {
+  const topic = log.topics[0];
+  if (topic === merchantRegAbi.events.MerchantCreated.topic) {
+    console.log("New Merchant Created: ", log.block, new Date().toISOString(), "\n");
+    handleMerchantCreated(log, em);
+  } else if (topic === merchantRegAbi.events.MerchantUpdated.topic) {
+    console.log("Merchant Updated: ", log.block, new Date().toISOString(), "\n");
+    handleMerchantUpdated(log, em);
+  } else if (topic === merchantRegAbi.events.MerchantStatusUpdated.topic) {
+    console.log("Merchant Status Updated: ", log.block, new Date().toISOString(), "\n");
+    handleMerchantStatusUpdated(log, em);
+  } else if (topic === merchantRegAbi.events.PayoutAddressSet.topic) {
+    console.log("Merchant Payout Address Set: ", log.block, new Date().toISOString(), "\n");
+    handlePayoutAddressSet(log, em);
+  } else if (topic === merchantRegAbi.events.TokensAdded.topic) {
+    console.log("Merchant Tokens Added: ", log.block, new Date().toISOString(), "\n");
+    handleTokensAdded(log, em);
+  } else if (topic === planRegAbi.events.PlanCreated.topic) {
+    console.log("New Plan Created: ", log.block, new Date().toISOString(), "\n");
+    handleCreatePlan(log, em);
+  } else if (topic === planRegAbi.events.PlanUpdated.topic) {
+    console.log("Plan Updated: ", log.block, new Date().toISOString(), "\n");
+    handlePlanUpdated(log, em);
+  } else if (topic === chainRegAbi.events.ChainRegistered.topic) {
+    console.log("Chain Registered: ", log.block, new Date().toISOString(), "\n");
+    handleChainRegistered(log, em);
+  } else if (topic === chainRegAbi.events.ChainStatusUpdated.topic) {
+    console.log("Chain Status Updated: ", log.block, new Date().toISOString(), "\n");
+    handleChainStatusUpdated(log, em);
+  } else if (topic === chainRegAbi.events.TokenSupportUpdated.topic) {
+    console.log("Chain Supported Tokens Updated: ", log.block, new Date().toISOString(), "\n");
+    handleUpdateSupportedChainTokens(log, em);
+  } else if (topic === subManagerAbi.events.Subscribed.topic) {
+    console.log("New User Subscribed: ", log.block, new Date().toISOString(), "\n");
+    handleUserSubscribed(log, em);
+  } else if (topic === subManagerAbi.events.PlanChangeScheduled.topic) {
+    console.log("User Plan Change Scheduled: ", log.block, new Date().toISOString(), "\n");
+    handleUserUpdateSubscribedPlan(log, em);
+  } else if (topic === subManagerAbi.events.PlanChanged.topic) {
+    console.log("User Plan Changed: ", log.block, new Date().toISOString(), "\n");
+    handlePlanChanged(log, em);
+  } else if (topic === subManagerAbi.events.SubscriptionPaid.topic) {
+    console.log("User Subscription Paid: ", log.block, new Date().toISOString(), "\n");
+    handleSubscriptionPaid(log, em);
+  } else if (topic === subManagerAbi.events.SubscriptionUpdated.topic) {
+    console.log("User Subscription Updated: ", log.block, new Date().toISOString(), "\n");
+    handleSubscriptionUpdated(log, em);
+  } else if (topic === subControllerAbi.events.TokenUpdateRequested.topic) {
+    console.log("Subscription Token Update Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminRelayTokenUpdate(log, em);
+  } else if (topic === subControllerAbi.events.MerchantUpdateRequested.topic) {
+    console.log("Subscription Merchant Update Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminRelayMerchantUpdate(log, em);
+  } else if (topic === subControllerAbi.events.ChargeRequested.topic) {
+    console.log("Subscription Charge Requested: ", log.block, new Date().toISOString(), "\n");
+    handleAdminChargeRequested(log, em);
+   } else if (topic === subControllerAbi.events.ChargeConfirmed.topic) {
+    console.log("Subscription Charge Confirmed: ", log.block, new Date().toISOString(), "\n");
+    handleChargeConfirmed(log, em);
+   }
+}
+
+// ─── Fetch logs via eth_getLogs for a block range ───────────────────────────
+async function fetchLogs(
+  client: ReturnType<typeof createPublicClient>,
+  fromBlock: number,
+  toBlock: number,
+): Promise<IndexerLog[]> {
+  const rawLogs = await client.getLogs({
+    address: CONTRACT_ADDRESSES,
+    fromBlock: BigInt(fromBlock),
+    toBlock: BigInt(toBlock),
+  });
+
+  if (rawLogs.length === 0) return [];
+
+  // We need timestamps for each block that has logs
+  const blockNums = [...new Set(rawLogs.map((l) => Number(l.blockNumber)))];
+  const blockTimestamps = new Map<number, number>();
+  await Promise.all(
+    blockNums.map(async (bn) => {
+      const block = await client.getBlock({ blockNumber: BigInt(bn) });
+      blockTimestamps.set(bn, Number(block.timestamp));
+    }),
+  );
+
+  return rawLogs.map((l) => ({
+    data: l.data,
+    topics: [...l.topics],
+    address: l.address.toLowerCase(),
+    transactionHash: l.transactionHash,
+    block: {
+      height: Number(l.blockNumber),
+      timestamp: blockTimestamps.get(Number(l.blockNumber)) ?? 0,
+    },
+  }));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ─── Main polling loop ──────────────────────────────────────────────────────
+async function main(): Promise<void> {
+  console.log('PolkaBill Event Poller starting…');
+
+  const ds = createDataSource();
+  await ds.initialize();
+  await ensureCursorTable(ds);
+  console.log('Database connected');
+
+  const client = createPublicClient({
+    transport: http(networkConfig.rpcEndpoint),
+  });
+
+  let cursor = await getCursor(ds);
+  console.log(`Resuming from block ${cursor + 1}`);
+
+  while (true) {
+    try {
+      const chainHead = Number(await client.getBlockNumber());
+      const safeHead = chainHead - networkConfig.finalityConfirmation;
+
+      if (cursor >= safeHead) {
+        console.log(`Waiting for new blocks… head=${chainHead} safe=${safeHead} cursor=${cursor}`);
+        await sleep(POLL_INTERVAL);
+        continue;
+      }
+
+      const from = cursor + 1;
+      const to = Math.min(from + BATCH_SIZE - 1, safeHead);
+
+      // Fetch logs for the entire batch via eth_getLogs
+      const allLogs = await fetchLogs(client, from, to);
+
+      if (allLogs.length > 0) {
+        // Group logs by block, sorted ascending
+        const blockMap = new Map<number, IndexerLog[]>();
+        for (const log of allLogs) {
+          const bn = log.block.height;
+          if (!blockMap.has(bn)) blockMap.set(bn, []);
+          blockMap.get(bn)!.push(log);
+        }
+
+        const blocks = [...blockMap.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([, logs]) => ({ logs }));
+
+        // Run through the standard processing pipeline
+        const cache = new BatchCache();
+        const ids = collectIds(blocks as any);
+        await preloadEntities(ds, cache, ids);
+        const em = new EntityManager(cache);
+
+        for (const block of blocks) {
+          for (const log of block.logs) {
+            try {
+              processLog(log, em);
+            } catch (err) {
+              console.warn(
+                `Failed processing log ${log.transactionHash}:`,
+                err,
+              );
+            }
+          }
+        }
+
+        await saveEntities(ds, em);
+        console.log(
+          `Processed ${allLogs.length} log(s) in blocks ${from}–${to}`,
+        );
+      } else {
+        console.log(`Blocks ${from}–${to}: no relevant logs`);
+      }
+
+      cursor = to;
+      await setCursor(ds, cursor);
+    } catch (err) {
+      console.error('Processing error, retrying in 10s:', err);
+      await sleep(RETRY_DELAY);
+    }
   }
 }
 
-const processor = makeProcessor(networkConfig);
-const db = new TypeormDatabase({ supportHotBlocks: true });
-
-processor.run(db, async (ctx) => {
-  const cache = new BatchCache();
-  const ids = collectIds(ctx.blocks);
-  await preloadEntities(ctx, cache, ids);
-
-  const em = new EntityManager(cache);
-
-  for (let block of ctx.blocks) {
-    for (let log of block.logs) {
-      await processLog(log, em);
-    }
-  }
-  const merchants: Merchant[] = [];
-  em.merchants.forEach(({ entity }) => merchants.push(entity));
-
-  const plans: Plan[] = [];
-  em.plans.forEach(({ entity }) => plans.push(entity));
-
-  const adapters: Adapter[] = [];
-  em.adapters.forEach(({ entity }) => adapters.push(entity));
-
-  const payouts: Payout[] = [];
-  em.payouts.forEach(({ entity }) => payouts.push(entity));
-
-  const subscriptions: Subscription[] = [];
-  em.subscriptions.forEach(({ entity }) => subscriptions.push(entity));
-
-  const charges: Charge[] = [];
-  em.charges.forEach(({ entity }) => charges.push(entity));
-
-  const users: User[] = [];
-  em.users.forEach(({ entity }) => users.push(entity));
-
-  await ctx.store.save(adapters);
-  await ctx.store.save(merchants);
-  await ctx.store.save(payouts);
-  await ctx.store.save(plans);
-  await ctx.store.save(users);
-  await ctx.store.save(subscriptions);
-  await ctx.store.save(charges);
+main().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
 });

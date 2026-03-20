@@ -99,4 +99,15 @@ type Charge @entity {
   blockNumber: BigInt!
   success: Boolean!
   createdAt: DateTime!
+  nonce: BigInt!
+}
+
+type Relay @entity {
+  id: ID!
+  adapter: Adapter!
+  type: String!
+  nonce: BigInt!
+  token: String
+  allow: Boolean
+  merchant: Merchant
 }

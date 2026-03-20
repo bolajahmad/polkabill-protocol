@@ -9,17 +9,17 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from '@/components/ui/input-group';
-import { MerchantContractAddress } from '@/lib/contracts';
+import { BASE_CHAIN, MerchantContractAddress } from '@/lib/contracts';
 import { MerchantContractABI } from '@/lib/contracts/abi/merchant.abi';
+import { handleContractError } from '@/lib/utils';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
 import { AlertTriangle, Building2, Loader2, ShieldCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { stringToHex } from 'viem';
-import { useWriteContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { useConnection, useSwitchChain, useWriteContract } from 'wagmi';
 import { z } from 'zod';
 
 const merchantRegistrationSchema = z.object({
@@ -40,21 +40,28 @@ const merchantRegistrationSchema = z.object({
     .pipe(
       z
         .number()
-        .min(900, 'Billing window must be at least 15 minutes (900 seconds)')
+        .min(120, 'Billing window must be at least 2 minutes (120 seconds)')
         .max(Number.MAX_SAFE_INTEGER, 'Billing window value too large'),
     ),
 });
 
 export const RegisterMerchantModal = () => {
+  const { chainId } = useConnection();
+  const { mutate: switchChain } = useSwitchChain();
   const {
     isPending,
     error: writeError,
     mutate: createMerchant,
   } = useWriteContract({
     mutation: {
-      onError: error => console.log({ error }),
+      onError: error => {
+        const message = handleContractError(error);
+        console.log({error});
+        toast.error(message || 'Failed to register merchant. Please try again.');
+      },
       onSuccess: data => {
         console.log({ data });
+        toast.success('Merchant registration successful!');
         setOpen(false);
       },
     },
@@ -71,22 +78,6 @@ export const RegisterMerchantModal = () => {
       industry: '',
     },
   });
-  const { mutateAsync: generateIpfsCid, isPending: generatingHash } = useMutation({
-    mutationKey: ['create-metadata-hash'],
-    mutationFn: async (data: any) =>
-      fetch('/api/generate-ipfs-cid', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          industry: data.industry
-            .split(',')
-            .map((t: any) => t.trim())
-            .slice(0, 3),
-          version: '1.0.0',
-        }),
-      }).then(res => res.json()),
-  });
 
   const onSubmit = async (formData: Record<string, string | number>) => {
     // Handle form submission
@@ -94,18 +85,24 @@ export const RegisterMerchantModal = () => {
     // Call mutate to submit to blockchain
     const grace = BigInt(formData.grace || 0);
     const window = BigInt(formData.window);
-    const cid = await generateIpfsCid({
+    const metadata = JSON.stringify({
+      version: '1.0.0',
       title: formData.company,
       description: formData.description,
       industry: formData.industry,
     });
+    const cid = stringToHex(metadata);
+
+    if (chainId !== BASE_CHAIN.id) {
+      switchChain({ chainId: BASE_CHAIN.id });
+    }
     
     createMerchant({
       abi: MerchantContractABI,
       address: MerchantContractAddress,
       functionName: 'createMerchant',
-      args: [grace, window, stringToHex(cid.hash)], // Assuming empty metadata for now
-      chain: baseSepolia
+      args: [grace, window, cid], // Assuming empty metadata for now
+      chainId: BASE_CHAIN.id,
     });
   };
 
@@ -289,11 +286,11 @@ export const RegisterMerchantModal = () => {
                     <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isPending || form.formState.isSubmitting || generatingHash}>
-                      {isPending || form.formState.isSubmitting || generatingHash ? (
+                    <Button type="submit" disabled={isPending || form.formState.isSubmitting}>
+                      {isPending || form.formState.isSubmitting ? (
                         <span className="flex items-center gap-2">
                           <Loader2 size={16} className="animate-spin" />
-                          Creating Account...
+                          Registering Merchant...
                         </span>
                       ) : (
                         'Create Merchant Account'

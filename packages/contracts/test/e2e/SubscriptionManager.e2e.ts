@@ -1,8 +1,7 @@
-import { viem, network } from "hardhat";
 import { time } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
-import { ChainRegistryContractAddress } from "../../utils/constants";
 import { expect } from "chai";
-import { encodeAbiParameters, keccak256, parseAbiParameters, toHex } from "viem";
+import { viem } from "hardhat";
+import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 
 describe("Polkabill - Full E2E", function () {
   async function deployFixture() {
@@ -10,17 +9,18 @@ describe("Polkabill - Full E2E", function () {
       await viem.getWalletClients();
     const publicClient = await viem.getPublicClient();
 
-    // Deploy ChainRegistry
-    const chainRegistry = await viem.deployContract("ChainRegistry", [
-      "0xa60455db7f535af309dd654bcb38cc95c2dd32e8f9c3f859590988115f391d30",
-      other.account.address,
+    // Deploy ChainRegistry (no constructor args)
+    const chainRegistry = await viem.deployContract("ChainRegistry", []);
+
+    // Deploy SubscriptionManager first (needed by MerchantRegistry)
+    const subManager = await viem.deployContract("SubscriptionManager", [
+      chainRegistry.address,
     ]);
 
-    // Deploy Merchantregistry
+    // Deploy MerchantRegistry (needs chainRegistry + subManager)
     const merchantRegistry = await viem.deployContract("MerchantRegistry", [
       chainRegistry.address,
-      owner.account.address,
-      owner.account.address,
+      subManager.address,
     ]);
 
     // Deploy PlanRegistry
@@ -28,33 +28,35 @@ describe("Polkabill - Full E2E", function () {
       merchantRegistry.address,
     ]);
 
-    // Deploy SubscriptionManager
-    const subManager = await viem.deployContract("SubscriptionManager", [
-      merchantRegistry.address,
-      planRegistry.address,
-      owner.account.address,
-      chainRegistry.address,
-    ]);
-
     const token = await viem.deployContract("DummyERC20", ["NAME", "NME", 18]);
 
-    // // Deploy SubscriptionsController
+    // Deploy mock host for Hyperbridge dispatch calls
+    const mockHost = await viem.deployContract("MockHost");
+
+    // Deploy SubscriptionsController
     const controller = await viem.deployContract("SubscriptionsController", [
-      "0xbb26e04a71e7c12093e82b83ba310163eac186fa", // host mock
+      mockHost.address, // host mock
       token.address, // fee token dummy
       chainRegistry.address,
       subManager.address,
       merchantRegistry.address,
     ]);
 
+    // Wire up registries and controllers
+    await subManager.write.updateMerchantRegistry([merchantRegistry.address]);
+    await subManager.write.updatePlanRegistry([planRegistry.address]);
+    await subManager.write.updateController([controller.address]);
+    await chainRegistry.write.updateController([controller.address]);
+    await merchantRegistry.write.updateController([controller.address]);
+
     const adapter = await viem.deployContract("BillingAdapter");
-    adapter.write.initialize([
+    await adapter.write.initialize([
         "0xD198c01839dd4843918617AfD1e4DDf44Cc3BB4a",
         controller.address,
         token.address
     ]);
 
-    console.log({ adapter: keccak256(await publicClient.getCode(adapter) as `0x${string}`) });
+    console.log({ adapter: keccak256(await publicClient.getCode({address: adapter.address}) as `0x${string}`) });
     return {
       owner,
       merchant,
@@ -83,7 +85,7 @@ describe("Polkabill - Full E2E", function () {
       // Create merchant
       const grace = 86400n; // 1 day
       await merchantRegistry.write.createMerchant(
-        [merchant.account.address, grace, 3600n, "0x"],
+        [grace, 3600n, "0x"],
         { account: merchant.account },
       );
       const m = await merchantRegistry.read.getMerchant([
@@ -142,7 +144,7 @@ describe("Polkabill - Full E2E", function () {
 
       // Create merchant
       await merchantRegistry.write.createMerchant(
-        [merchant.account.address, 86400n, 3600n, "0x"],
+        [86400n, 3600n, "0x"],
         { account: merchant.account },
       );
 
@@ -171,11 +173,12 @@ describe("Polkabill - Full E2E", function () {
       );
       expect(sub.status).to.equal(1); // Active
 
-      // Move time to billing window
-      const { window } = await merchantRegistry.read.getMerchant([
+      // Move time to within the billing window
+      // nextChargeAt = startTime + merchant.window, window opens immediately
+      const { window: billingWindow } = await merchantRegistry.read.getMerchant([
         merchant.account.address,
       ]);
-      await time.increase(Number(interval - window)); // Increase time by `interval`
+      await time.increase(Number(billingWindow)); // Advance to nextChargeAt
 
       // Check charge is allowed
       const isAllowed = await subManager.read.isChargeAllowed([subId]);

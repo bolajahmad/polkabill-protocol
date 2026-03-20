@@ -21,6 +21,7 @@ const config: HardhatUserConfig = {
   networks: {
     polkadotTestnet: {
       url: 'https://services.polkadothub-rpc.com/testnet',
+      // url: 'https://eth-rpc-testnet.polkadot.io/',
       chainId: 420420417,
       accounts: [vars.get('PRIVATE_KEY')],
     },
@@ -44,6 +45,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       polkadotTestnet: vars.get('SUBSCAN_API_KEY'),
       baseSepolia: vars.get('ETHERSCAN_API_KEY'),
+      sepolia: vars.get('ETHERSCAN_API_KEY'),
       polygonAmoy: vars.get('ETHERSCAN_API_KEY'),
     },
     customChains: [

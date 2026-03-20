@@ -172,8 +172,11 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
 
         uint256 grace = plan.grace > 0 ? plan.grace : merchant.grace;
+        uint256 window = sub.nextChargeAt > merchant.window
+            ? sub.nextChargeAt - merchant.window
+            : 0;
         if (
-            block.timestamp >= sub.nextChargeAt - merchant.window &&
+            block.timestamp >= window &&
             block.timestamp <= sub.nextChargeAt + grace
         ) {
             return true;

@@ -1,221 +1,147 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {HyperApp} from "@hyperbridge/core/contracts/apps/HyperApp.sol";
-import {IncomingPostRequest} from "@hyperbridge/core/contracts/interfaces/IApp.sol";
-import {StateMachine} from "@hyperbridge/core/contracts/libraries/StateMachine.sol";
-import {PostRequest} from "@hyperbridge/core/contracts/libraries/Message.sol";
-import {IDispatcher, DispatchPost} from "@hyperbridge/core/contracts/interfaces/IDispatcher.sol";
+import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable2Step.sol';
+import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import "./interfaces/IBillingAdapter.sol";
+contract BillingAdapter is EIP712, ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
 
-contract BillingAdapter is
-    HyperApp,
-    IBillingAdapter,
-    OwnableUpgradeable,
-    ReentrancyGuard
-{
-    address private _host;
-    mapping(address => bool) private tokens;
-    uint256 private fee = 5 * 10 ** 17; // 0.5 fee for each charge, can be updated by owner
-    bytes private hubControl;
-    bool private initialized;
+    string private constant NAME = 'BillingAdapter';
+    string private constant VERSION = '1';
 
-    uint256 public sourceChainId;
-    bool public nativeAdapter;
-
-    mapping(bytes32 => bool) public charges;
-
-    IERC20 public feeToken;
-
-    modifier onlyAfterInitialize() {
-        require(initialized, "Not initialized");
-        _;
-    }
-
-    /**
-     *
-     * @param _h The HyperApp contract for the chain
-     * @param _hub The keccak hash of the hub controller
-     */
-    function initialize(
-        address _h,
-        bytes memory _hub,
-        address _fee
-    ) public initializer {
-        require(!initialized, "Already initialized");
-        __Ownable_init(msg.sender);
-        _host = _h;
-        hubControl = _hub;
-        feeToken = IERC20(_fee);
-        feeToken.approve(_host, type(uint256).max);
-        initialized = true;
-    }
-
-    function host() public view override returns (address) {
-        return _host;
-    }
-
-    function onAccept(
-        IncomingPostRequest calldata _incoming
-    ) external override onlyHost nonReentrant onlyAfterInitialize {
-        if (keccak256(_incoming.request.from) != keccak256(hubControl)) {
-            revert UnregisteredSource();
-        }
-        if (keccak256(_incoming.request.source) != keccak256(_sourceChain())) {
-            revert UnregisteredSource();
-        }
-
-        // Decode bytes from data
-        (uint8 _type, bytes memory params) = abi.decode(
-            _incoming.request.body,
-            (uint8, bytes)
+    bytes32 private constant CHARGE_TYPEHASH =
+        keccak256(
+            'Charge(uint256 subId,uint256 cycle,uint256 amount,address subscriber,address token,address merchant,uint256 nonce)'
         );
-        if (RequestType(_type) == RequestType.TOKEN_UPDATED) {
-            // Update Token Route
-            (address _token, bool _add) = abi.decode(params, (address, bool));
-            _updateToken(_token, _add);
-        } else if (RequestType(_type) == RequestType.CHARGE) {
-            (
-                uint256 _subid,
-                uint256 _amount,
-                address _subscriber,
-                address _token,
-                uint256 _cycle,
-                address _payout
-            ) = abi.decode(
-                    params,
-                    (uint256, uint256, address, address, uint256, address)
-                );
-            _charge(_subid, _amount, _subscriber, _token, _cycle, _payout);
-        } else {
-            revert InvalidRequestType();
-        }
+    bytes32 private constant TOKEN_TYPEHASH =
+        keccak256('TokenUpdate(address token,bool allowed,uint256 nonce)');
+    bytes32 private constant MERCHANT_TYPEHASH =
+        keccak256('MerchantUpdate(address merchant,address payout,uint256 nonce)');
+
+    uint256 public fee = 5 * 10 ** 17; // 0.5 by default
+    address public signer; // trusted signer (admin/backend)
+
+    mapping(bytes32 => bool) public executedCharge;
+    mapping(bytes32 => bool) public executedRelay;
+    mapping(uint256 => bool) public usedNonce;
+    // token allowlist
+    mapping(address => bool) public supportedToken;
+    mapping(address => address) public merchantPayout;
+
+    event ChargeExecuted(uint256 indexed subId, uint256 indexed cycle);
+    event TokenUpdated(address token, bool allowed);
+    event MerchantUpdated(address merchant, address payout);
+    event FeeUpdated(uint256 newFee);
+
+    struct Charge {
+        uint256 subId;
+        uint256 cycle;
+        uint256 amount;
+        address subscriber;
+        address token;
+        address merchant;
+        uint256 nonce;
     }
 
-    function onPostRequestTimeout(
-        PostRequest memory request
-    ) external override onlyAfterInitialize {
-        (uint8 _type, bytes memory _params) = abi.decode(
-            request.body,
-            (uint8, bytes)
+    constructor() EIP712(NAME, VERSION) Ownable(msg.sender) {
+        signer = msg.sender;
+    }
+
+    // Relayer entrypoint
+    function executeChargeWithSig(Charge calldata c, bytes calldata sig) external nonReentrant {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    CHARGE_TYPEHASH,
+                    c.subId,
+                    c.cycle,
+                    c.amount,
+                    c.subscriber,
+                    c.token,
+                    c.merchant,
+                    c.nonce
+                )
+            )
         );
 
-        if (RequestType(_type) == RequestType.CHARGE) {
-            // Just resend the message
-            (uint256 _subid, uint256 _cycle, ) = abi.decode(
-                _params,
-                (uint256, uint256, uint256)
-            );
-            bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
-            if (!charges[chargeId]) return;
+        address recovered = ECDSA.recover(digest, sig);
+        require(recovered == signer, 'INVALID_SIG');
 
-            // Just resend the message
-            IDispatcher(_host).dispatch(
-                DispatchPost({
-                    body: request.body,
-                    dest: request.dest,
-                    timeout: uint64(0),
-                    to: abi.encodePacked(hubControl),
-                    fee: 0,
-                    payer: address(this)
-                })
-            );
-            return;
-        }
+        bytes32 chargeId = keccak256(abi.encode(c.subId, c.cycle));
+        require(!executedCharge[chargeId], 'ALREADY_EXECUTED');
+
+        require(supportedToken[c.token], 'TOKEN_NOT_SUPPORTED');
+
+        address payout = merchantPayout[c.merchant];
+        require(payout != address(0), 'INVALID_MERCHANT');
+
+        executedCharge[chargeId] = true;
+
+        IERC20(c.token).safeTransferFrom(c.subscriber, address(this), c.amount);
+
+        IERC20(c.token).safeTransfer(payout, c.amount - fee);
+
+        emit ChargeExecuted(c.subId, c.cycle);
     }
 
-    function withdrawFees(address token, address to) external onlyOwner {
-        // Withdraw all tokens to the owner
-        uint256 balance = IERC20(token).balanceOf(address(this));
-        SafeERC20.safeTransfer(IERC20(token), to, balance);
+    // Admin logic
+    function setTokenWithSig(
+        address token,
+        bool allowed,
+        uint256 nonce,
+        bytes calldata sig
+    ) external {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(abi.encode(TOKEN_TYPEHASH, token, allowed, nonce))
+        );
+
+        address recovered = ECDSA.recover(digest, sig);
+        require(recovered == signer, 'INVALID_SIG');
+
+        bytes32 relayId = keccak256(abi.encode(token, allowed, nonce));
+        require(executedRelay[relayId] == false, 'ALREADY_EXECUTED');
+        require(!usedNonce[nonce], "NONCE_USED");
+        executedRelay[relayId] = true;
+        supportedToken[token] = allowed;
+        usedNonce[nonce] = true;
+        emit TokenUpdated(token, allowed);
     }
 
-    function updateFee(uint256 _fee) external onlyOwner {
-        uint256 oldFee = fee;
+    function setMerchantWithSig(
+        address merchant,
+        address payout,
+        uint256 nonce,
+        bytes calldata sig
+    ) external {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(abi.encode(MERCHANT_TYPEHASH, merchant, payout, nonce))
+        );
+
+        address recovered = ECDSA.recover(digest, sig);
+        require(recovered == signer, 'INVALID_SIG');
+
+        bytes32 relayId = keccak256(abi.encode(merchant, payout, nonce));
+        require(executedRelay[relayId] == false, 'ALREADY_EXECUTED');
+        require(!usedNonce[nonce], "NONCE_USED");
+        executedRelay[relayId] = true;
+        usedNonce[nonce] = true;
+        merchantPayout[merchant] = payout;
+
+        emit MerchantUpdated(merchant, payout);
+    }
+
+    function setFee(uint256 _fee) external onlyOwner {
         fee = _fee;
-        emit FeeUpdated(_fee, oldFee);
+        emit FeeUpdated(_fee);
     }
 
-    function updateSourceChain(uint256 _chainId, bool _native) external onlyOwner {
-        uint256 oldChainId = sourceChainId;
-        bool oldNative = nativeAdapter;
-        sourceChainId = _chainId;
-        nativeAdapter = _native;
-        emit SourceChainUpdated(_chainId, _native, oldChainId, oldNative);
-    }
-
-    function _sourceChain() internal view returns (bytes memory) {
-        // 1000 is the polkadot assetHub chain ID
-        return nativeAdapter ? StateMachine.polkadot(sourceChainId) : StateMachine.evm(sourceChainId);
-    }
-
-    function _updateToken(address _token, bool _add) internal {
-        if (_add) {
-            tokens[_token] = true;
-        } else {
-            delete tokens[_token];
-        }
-
-        emit TokenUpdated(_token, _add);
-    }
-
-    function _charge(
-        uint256 _subid,
-        uint256 _amount,
-        address _subscriber,
-        address _token,
-        uint256 _cycle,
-        address _payout
-    ) internal {
-        // Ensure token is supported
-        if (!tokens[_token] || _payout == address(0)) {
-            revert InvalidRequestType();
-        }
-        if (fee >= _amount) {
-            revert InvalidRequestType();
-        }
-        // Ensure the charge is not executed before (idempotency)
-        bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
-        if (charges[chargeId]) {
-            revert InvalidRequestType();
-        }
-        // Initiate transfer action from subscriber
-        SafeERC20.safeTransferFrom(
-            IERC20(_token),
-            _subscriber,
-            address(this),
-            _amount
-        );
-        SafeERC20.safeTransferFrom(
-            IERC20(_token),
-            address(this),
-            _payout,
-            _amount - fee
-        );
-
-        charges[chargeId] = true;
-        _notifyChargeSuccess(_subid, _cycle);
-        emit ChargeExecuted(_subid, _cycle);
-    }
-
-    function _notifyChargeSuccess(uint256 _subid, uint256 _cycle) internal {
-        bytes memory params = abi.encode(_subid, _cycle, block.chainid);
-        bytes memory body = abi.encode(1, params);
-
-        DispatchPost memory post = DispatchPost({
-            body: body,
-            dest: _sourceChain(),
-            timeout: uint64(0),
-            to: abi.encodePacked(hubControl),
-            fee: 0,
-            payer: address(this)
-        });
-        bytes32 commitmentid = IDispatcher(_host).dispatch(post);
-        emit ChargeDispatchSent(_subid, _cycle, commitmentid);
+    function withdrawFees(address _token, address _to) external onlyOwner {
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_to, balance);
     }
 }

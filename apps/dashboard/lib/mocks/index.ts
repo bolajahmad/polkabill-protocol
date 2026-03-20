@@ -177,3 +177,62 @@ const MOCK_MERCHANTS = [
     ]
   },
 ];
+
+export const MOCK_ALL_SUBSCRIPTIONS = [
+  { 
+    id: "s1", 
+    subscriber: "0x123...456", 
+    merchant: "Acme Cloud", 
+    plan: "Pro Plan", 
+    price: 49.99, 
+    status: "active", 
+    nextBilling: Date.now() - 3600000, // 1 hour ago (due)
+    chain: "Polygon", 
+    adapter: "0x991...A882",
+    hasBalance: true,
+    hasApproval: true,
+    window: 24
+  },
+  { 
+    id: "s2", 
+    subscriber: "0x789...012", 
+    merchant: "Nebula VPN", 
+    plan: "Basic", 
+    price: 9.99, 
+    status: "active", 
+    nextBilling: Date.now() + 86400000 * 5, // 5 days later
+    chain: "Ethereum", 
+    adapter: "0x882...F112",
+    hasBalance: true,
+    hasApproval: true,
+    window: 12
+  },
+  { 
+    id: "s3", 
+    subscriber: "0x456...789", 
+    merchant: "Echo Music", 
+    plan: "Premium", 
+    price: 14.99, 
+    status: "cancelled", 
+    nextBilling: null, 
+    chain: "Arbitrum", 
+    adapter: "0x112...B991",
+    hasBalance: false,
+    hasApproval: true,
+    window: 48
+  },
+  { 
+    id: "s4", 
+    subscriber: "0xabc...def", 
+    merchant: "Acme Cloud", 
+    plan: "Pro Plan", 
+    price: 49.99, 
+    status: "active", 
+    nextBilling: Date.now() - 7200000, // 2 hours ago (due)
+    chain: "Polygon", 
+    adapter: "0x991...A882",
+    hasBalance: true,
+    hasApproval: false,
+    window: 24
+  },
+];

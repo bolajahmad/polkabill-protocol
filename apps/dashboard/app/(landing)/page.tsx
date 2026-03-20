@@ -23,7 +23,7 @@ export default function LandingPage() {
     address!,
   );
   const router = useRouter();
-  console.log({ chain });
+  console.log({ hasMerchant, merchant  });
 
   const onSelectRole = (role: string) => {
     router.push(role);

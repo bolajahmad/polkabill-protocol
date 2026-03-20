@@ -76,6 +76,7 @@ export default function MerchantsPortalPage() {
             <MerchantPlansView
               mid={merchant?.id as `0x${string}`}
               window={merchant?.billingWindow || 0}
+              defaultGrace={merchant?.grace || 0}
               plans={merchant?.plans || []}
             />
           </TabPanel>

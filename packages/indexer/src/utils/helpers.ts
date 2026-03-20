@@ -1,5 +1,4 @@
 import { DataHandlerContext } from "@subsquid/evm-processor";
-import { Adapter, Merchant, Payout, Plan } from "../model";
 import { Store } from "@subsquid/typeorm-store/lib/store";
 import { decodeAbiParameters, encodePacked, keccak256 } from "viem";
 
@@ -18,6 +17,14 @@ export function merchantPayoutId(mid: string, chainId: bigint) {
 
 export function chargeId(subId: string, cycle: bigint) {
   return keccak256(encodePacked(["string", "uint256"], [subId, cycle]));
+}
+
+export function relayMerchantUpdateId(merchant: `0x${string}`, payout: `0x${string}`, nonce: bigint) {
+  return keccak256(encodePacked(["address", "address", "uint256"], [merchant, payout, nonce]));
+}
+
+export function relayAdminTokenUpdateId(token: `0x${string}`, allowed: boolean, nonce: bigint) {
+  return keccak256(encodePacked(["address", "bool", "uint256"], [token, allowed, nonce]));
 }
 
 export function decodeChargeRequestParams(body: `0x${string}`) {

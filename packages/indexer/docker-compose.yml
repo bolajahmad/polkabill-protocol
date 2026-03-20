@@ -7,7 +7,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "squid"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d squid"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,6 +25,11 @@ services:
       - DB_PASS=postgres
       - GQL_PORT=4350
       - RPC_BASE_SEPOLIA_HTTP=${RPC_BASE_SEPOLIA_HTTP}
+      - RPC_ETHEREUM_SEPOLIA_HTTP=${RPC_ETHEREUM_SEPOLIA_HTTP}
+      - RPC_ASSETHUB_HTTP=${RPC_ASSETHUB_HTTP}
+      - SQD_ALLOW_INCONSISTENT_DATA=${SQD_ALLOW_INCONSISTENT_DATA}
+      - SQD_EVM_MAX_BATCH_CALL_RETRIES=${SQD_EVM_MAX_BATCH_CALL_RETRIES}
+      - SQD_EVM_BATCH_CALL_RETRY_DELAY=${SQD_EVM_BATCH_CALL_RETRY_DELAY}
     ports:
       # GraphQL endpoint at port 4350
       - "4350:4350"
@@ -40,9 +45,11 @@ services:
       - DB_HOST=db
       - DB_PASS=postgres
       - RPC_BASE_SEPOLIA_HTTP=${RPC_BASE_SEPOLIA_HTTP}
+      - RPC_ETHEREUM_SEPOLIA_HTTP=${RPC_ETHEREUM_SEPOLIA_HTTP}
+      - RPC_ASSETHUB_HTTP=${RPC_ASSETHUB_HTTP}
     ports:
-      # prometheus metrics exposed at port 3000
-      - "3000:3000"
+      # prometheus metrics exposed at port 3500
+      - "3500:3500"
     command: ["sqd", "process:prod"]
     depends_on:
       db:
