@@ -37,6 +37,8 @@ export const MerchantSubscriptions = ({ mid }: Props) => {
       >)
     : undefined;
 
+    console.log({ selectedSub });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -130,7 +132,7 @@ export const MerchantSubscriptions = ({ mid }: Props) => {
                       <td className="p-4">
                         <p className="text-sm font-bold">Cycle #{sub.billingCycle}</p>
                         <p className="text-xs text-neutral-500">
-                          Next: {dayjs(sub.nextBillingTime).format('YYYY-MM-DD')}
+                          Next: {dayjs(sub.nextBillingTime * 1000).format('YYYY-MM-DD')}
                         </p>
                       </td>
                       <td className="p-4">

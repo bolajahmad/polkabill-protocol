@@ -12,15 +12,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const revenue = data.charges
     .filter((charge: any) => charge.success)
     .reduce((acc: number, charge: any) => {
-      return acc + charge.amount;
+      return BigInt(acc) + BigInt(charge.amount ?? 0);
     }, 0);
-  const fees = revenue * 0.05; // Assuming a 5% fee
+  const fees = revenue * 5n / 100n; // Assuming a 5% fee
   const merchantCount = merchantsData.merchants.length;
 
   const stats = {
-    revenue,
+    revenue: revenue.toString(),
     subscriptionCount: totalSubs,
-    fees,
+    fees: fees.toString(),
     totalMerchants: merchantCount,
   };
   return Response.json(stats);

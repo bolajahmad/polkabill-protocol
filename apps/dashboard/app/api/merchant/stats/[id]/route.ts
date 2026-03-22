@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const stats = {
     revenue,
-    activeSubCount: activeSubs.length,
+    activeSubCount: activeSubs,
     churn: 0,
     ltv: 0,
   };

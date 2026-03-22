@@ -34,10 +34,9 @@ const ViewPlanDetailsModal = ({ plan, merchant }: { plan: IPlan; merchant: IMerc
   const merchantData = parseJsonOrUndefined(
     hexToString(merchant.metadataUri as `0x${string}`),
   ) as Record<string, string>;
-  const planMetadata = parseJsonOrUndefined(hexToString(plan.metadataUri as `0x${string}`)) as Record<
-    string,
-    string
-  >;
+  const planMetadata = parseJsonOrUndefined(
+    hexToString(plan.metadataUri as `0x${string}`),
+  ) as Record<string, string>;
 
   return (
     <>
@@ -54,7 +53,7 @@ const ViewPlanDetailsModal = ({ plan, merchant }: { plan: IPlan; merchant: IMerc
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                   {merchantData.title || ''}
                 </p>
-                <h3 className="text-2xl font-bold">{planMetadata.name || "N/A"}</h3>
+                <h3 className="text-2xl font-bold">{planMetadata.name || 'N/A'}</h3>
               </div>
 
               <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 space-y-4">
@@ -77,7 +76,7 @@ const ViewPlanDetailsModal = ({ plan, merchant }: { plan: IPlan; merchant: IMerc
                   Description
                 </h4>
                 <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
-                  {planMetadata.description || "N/A"}
+                  {planMetadata.description || 'N/A'}
                 </p>
               </div>
 
@@ -85,7 +84,9 @@ const ViewPlanDetailsModal = ({ plan, merchant }: { plan: IPlan; merchant: IMerc
                 <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                   Merchant Info
                 </h4>
-                <p className="text-xs text-neutral-500 italic">{merchantData.description || "N/A"}</p>
+                <p className="text-xs text-neutral-500 italic">
+                  {merchantData.description || 'N/A'}
+                </p>
               </div>
               <Button onClick={() => setOpen(false)} className="rounded-xl">
                 Close
@@ -245,7 +246,11 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                     <span
                       className={cn(
                         'text-sm font-bold',
-                        !token || (token?.balance < plan.price && 'text-rose-500'),
+                        !token || (Number(
+                        formatUnits(BigInt(token?.balance || 0), token?.decimals || 18),
+                      ) < Number(
+                        formatUnits(BigInt(plan.price), 18),
+                      ) && 'text-rose-500'),
                       )}
                     >
                       {Number(
@@ -261,7 +266,7 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                     <span
                       className={cn(
                         'text-sm font-bold',
-                        !token || ((token.allowance || 0) < plan.price && 'text-amber-500'),
+                        !token || (Number(formatUnits(BigInt(token?.allowance || 0), token?.decimals || 18)) < Number(formatUnits(BigInt(plan.price), 18)) && 'text-amber-500'),
                       )}
                     >
                       {Number(
@@ -272,7 +277,9 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                   </div>
                 </div>
 
-                {(!token || token.balance < plan.price) && (
+                {(!token ||
+                  Number(formatUnits(BigInt(token?.balance || 0), token?.decimals || 18)) <
+                    Number(formatUnits(BigInt(plan.price), 18))) && (
                   <div className="p-3 bg-rose-50 rounded-xl border border-rose-100 flex gap-2 items-center">
                     <Info size={14} className="text-rose-500" />
                     <p className="text-[10px] text-rose-700 font-bold uppercase">
@@ -281,14 +288,19 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                   </div>
                 )}
 
-                {token && token.balance >= plan.price && (token.allowance || 0) < plan.price && (
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-2 items-center">
-                    <ShieldCheck size={14} className="text-amber-500" />
-                    <p className="text-[10px] text-amber-700 font-bold uppercase">
-                      Allowance approval required for this adapter.
-                    </p>
-                  </div>
-                )}
+                {token &&
+                  Number(formatUnits(BigInt(token?.balance || 0), token?.decimals || 18)) >=
+                    Number(formatUnits(BigInt(plan.price), 18)) &&
+                  Number(formatUnits(BigInt(token?.allowance || 0), token?.decimals || 18)) <
+                    Number(formatUnits(BigInt(plan.price), 18))
+                     && (
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-2 items-center">
+                      <ShieldCheck size={14} className="text-amber-500" />
+                      <p className="text-[10px] text-amber-700 font-bold uppercase">
+                        Allowance approval required for this adapter.
+                      </p>
+                    </div>
+                  )}
               </div>
 
               <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-100 flex gap-3">
@@ -303,7 +315,11 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                 <Button variant="ghost" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                {token && token?.balance >= plan.price && (token.allowance || 0) >= plan.price ? (
+                {token && Number(
+                        formatUnits(BigInt(token?.balance || 0), token?.decimals || 18),
+                      ) >= Number(formatUnits(BigInt(plan.price), 18)) && Number(
+                        formatUnits(BigInt(token?.allowance || 0), token?.decimals || 18),
+                      ) >= Number(formatUnits(BigInt(plan.price), 18)) ? (
                   <Button
                     disabled={isPending || !token || !adapter}
                     onClick={() => handleSubscribe(plan)}
@@ -312,7 +328,9 @@ const SubscribeToPlan = ({ plan, adapters }: { plan: IPlan; adapters: IAdapterWi
                     {isPending ? <Spinner /> : null}
                     Confirm Subscription
                   </Button>
-                ) : token && token.balance >= plan.price ? (
+                ) : token && Number(
+                        formatUnits(BigInt(token?.balance || 0), token?.decimals || 18),
+                      ) >= Number(formatUnits(BigInt(plan.price), 18)) ? (
                   <Button
                     onClick={() => setOpen(false)}
                     className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white border-none gap-2"

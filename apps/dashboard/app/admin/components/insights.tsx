@@ -12,6 +12,7 @@ export const AdminInsights = () => {
     queryKey: ['admin-stats'],
     queryFn: async () => fetch('/api/admin/stats').then(res => res.json()),
   });
+  console.log({ stats: data });
 
   const stats = useMemo(() => {
     return [

@@ -1,36 +1,28 @@
-"use client";
+'use client';
 
-import { FeatureCard, RoleCard } from "@/components/misc/stat-card";
-import { Button } from "@/components/ui/button";
-import { useCheckIsMerchantProfile } from "@/lib/hooks/use-check-account";
-import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CreditCard,
-  Globe,
-  Loader2,
-  ShieldCheck,
-  Zap
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useConnection } from "wagmi";
-import { RegisterMerchantModal } from "./(components)/register-merchant";
+import { FeatureCard, RoleCard } from '@/components/misc/stat-card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useCheckIsMerchantProfile } from '@/lib/hooks/use-check-account';
+import { motion } from 'framer-motion';
+import { ArrowRight, CreditCard, Globe, Loader2, ShieldCheck, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useConnection } from 'wagmi';
+import { RegisterMerchantModal } from './(components)/register-merchant';
 
 export default function LandingPage() {
   const { isConnected, address, isConnecting, chain } = useConnection();
-  const { hasMerchant, isLoading, merchant } = useCheckIsMerchantProfile(
-    address!,
-  );
+  const { hasMerchant, isLoading, merchant } = useCheckIsMerchantProfile(address!);
   const router = useRouter();
-  console.log({ hasMerchant, merchant  });
+  console.log({ hasMerchant, merchant });
 
   const onSelectRole = (role: string) => {
     router.push(role);
   };
-  
+
   return (
-    <div className="min-h-[calc(100vh-64px)] flex flex-col p-6 md:p-12">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col py-6 md:py-12">
       {/* Hero Section */}
       <section className="py-20 px-6 text-center max-w-4xl mx-auto space-y-8">
         <motion.div
@@ -58,9 +50,8 @@ export default function LandingPage() {
           transition={{ delay: 0.2 }}
           className="text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed"
         >
-          PolkaBill allows merchants to accept recurring stablecoin
-          subscriptions across multiple chains with zero friction. Secure,
-          transparent, and fully automated.
+          PolkaBill allows merchants to accept recurring stablecoin subscriptions across multiple
+          chains with zero friction. Secure, transparent, and fully automated.
         </motion.p>
 
         <motion.div
@@ -115,37 +106,86 @@ export default function LandingPage() {
 
       {/* Role Selection (Simplified) */}
       <section className="py-20 px-6 max-w-6xl mx-auto w-full">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Choose your portal
-        </h2>
+        <h2 className="text-3xl font-bold text-center mb-12">Choose your portal</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <RoleCard
             title="Merchant"
             description="Register your business, create subscription plans, and manage your payouts."
-            onClick={() => onSelectRole("merchant")}
-            features={[
-              "Custom Plans",
-              "Revenue Analytics",
-              "Multi-token Support",
-            ]}
+            onClick={() => onSelectRole('merchant')}
+            features={['Custom Plans', 'Revenue Analytics', 'Multi-token Support']}
             disabled={isConnected && !merchant}
           />
           <RoleCard
             title="Subscriber"
             description="Manage your active subscriptions, grant allowances, and track your history."
-            onClick={() => onSelectRole("user")}
-            features={[
-              "One-click Subscribe",
-              "Allowance Control",
-              "Cross-chain Balances",
-            ]}
+            onClick={() => onSelectRole('user')}
+            features={['One-click Subscribe', 'Allowance Control', 'Cross-chain Balances']}
           />
           <RoleCard
             title="Protocol Admin"
             description="Configure chain parameters, manage roles, and monitor protocol health."
-            onClick={() => onSelectRole("admin")}
-            features={["Chain Config", "Fee Management", "Global Insights"]}
+            onClick={() => onSelectRole('admin')}
+            features={['Chain Config', 'Fee Management', 'Global Insights']}
           />
+        </div>
+      </section>
+
+      <section className="py-20 px-6 bg-black text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-emerald-500/10 to-transparent" />
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6 relative z-10">
+            <Badge className="bg-emerald-500 text-white border-none rounded-full px-4 py-1">
+              Developer SDK
+            </Badge>
+            <h2 className="text-4xl font-bold tracking-tight">
+              Integrate Recurring Payments in Minutes
+            </h2>
+            <p className="text-neutral-400 text-lg leading-relaxed">
+              Our SDK provides a simple <code className="text-emerald-400">subscribe()</code>{' '}
+              function that handles all the complexity of cross-chain billing, approvals, and
+              scheduling.
+            </p>
+            <div className="flex gap-4 pt-4">
+              <a href="http://localhost:5173/" target='_blank' rel='noopener noreferrer'>
+                <Button
+                  size="lg"
+                  onClick={() => undefined}
+                  className="bg-white text-black hover:bg-neutral-200 rounded-2xl px-8 gap-2"
+                >
+                  View SDK Demo
+                  <ArrowRight size={18} />
+                </Button>
+              </a>
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-neutral-800 text-white hover:bg-neutral-900 rounded-2xl px-8"
+              >
+                Read Docs
+              </Button>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="bg-neutral-900 rounded-3xl p-6 border border-neutral-800 shadow-2xl font-mono text-sm text-neutral-300">
+              <div className="flex gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-rose-500" />
+                <div className="w-3 h-3 rounded-full bg-amber-500" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              </div>
+              <pre className="text-emerald-400">
+                {`// Merchant Website Integration
+import { PolkaBill } from "@polkabill/sdk";
+
+const handleSubscribe = async () => {
+  await PolkaBill.subscribe({
+    planId: "pro_monthly",
+    chainId: "137",
+    token: "USDC"
+  });
+};`}
+              </pre>
+            </div>
+          </div>
         </div>
       </section>
     </div>
