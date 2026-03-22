@@ -1,7 +1,7 @@
 import { PolkabillProvider } from '@polkabill/react';
 import { PolkabillClient } from '@polkabill/sdk-core';
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { baseSepolia } from 'viem/chains';
+import { sepolia } from 'viem/chains';
 import { useChains, useConnection, usePublicClient, useSwitchChain, useWalletClient } from 'wagmi';
 
 export const RootContext = ({ children }: { children: ReactNode }) => {
@@ -14,7 +14,7 @@ export const RootContext = ({ children }: { children: ReactNode }) => {
   } = useWalletClient({
     chainId: chain?.id,
   });
-
+console.log({ chain });
   // Only create PolkabillClient when walletClient is ready
   const polkabill = useMemo(() => {
     if (!walletClient) return null; // not ready yet
@@ -27,7 +27,7 @@ export const RootContext = ({ children }: { children: ReactNode }) => {
   // Auto-switch chain if no chain selected
   useEffect(() => {
     if (!chain) {
-      switchChain({ chainId: chains.find(c => c.id === baseSepolia.id)?.id || 84532 });
+      switchChain({ chainId: chains.find(c => c.id === sepolia.id)?.id || 11155111 });
     }
   }, [chain, chains, switchChain]);
 

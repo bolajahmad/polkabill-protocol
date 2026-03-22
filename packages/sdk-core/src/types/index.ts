@@ -6,8 +6,7 @@ export interface PolkabillConfig {
 }
 
 export interface SubscribeParams {
-  merchant: Address
   planId: bigint
-  token: Address
-  amount: bigint
+  chainId?: bigint
+  token?: Address
 }

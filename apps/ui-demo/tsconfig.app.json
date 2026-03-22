@@ -25,6 +25,7 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
+      "@/*": ["./src/*"],
       "@polkabill/react": ["../../packages/sdk-react/src"]
     }
   },

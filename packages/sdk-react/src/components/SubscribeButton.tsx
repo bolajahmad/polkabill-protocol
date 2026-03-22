@@ -1,32 +1,88 @@
-import { useAccount } from "wagmi";
-import { usePolkabill } from "../providers/PolkabillProvider";
+import { useState } from 'react';
+import { Address } from 'viem';
+import { useAccount } from 'wagmi';
+import { usePolkabill } from '../providers/PolkabillProvider';
 
-export function SubscribeButton({
-    planId,
-    merchantId
-}: any) {
-    const pb = usePolkabill();
-    const { address } = useAccount();
+export type SubscribeProps = {
+  planId: number;
+  chainId?: number;
+  token?: string;
+};
 
-    async function handleSubscribe() {
-        if (!address) {
-            alert("Connect wallet");
-            return;
-        }
+export function SubscribeButton({ planId, chainId, token }: SubscribeProps) {
+  const [isSubmitting, setSubmitting] = useState(false);
+  const pb = usePolkabill();
+  const { address } = useAccount();
 
-        console.log("Calling config");
+  async function handleSubscribe() {
 
-        await pb.subscribe({
-            merchant: merchantId,
-            planId,
-            token: "0x0000000000000000000000000000000000000000", // TODO: update token for prod
-            amount: 0n   // TODO: update amount for prod
-        });
+    if (!address) {
+      alert('Connect wallet');
+      return;
     }
+    setSubmitting(true);
+    console.log('Calling config');
 
-    return (
-        <button onClick={handleSubscribe}>
-            Subscribe
-        </button>
-    )
+    await pb.subscribe({
+      chainId: BigInt(chainId || 0),
+      planId: BigInt(planId),
+      token: token as Address,
+    });
+    setSubmitting(false);
+  }
+
+  return (
+    <button
+      onClick={handleSubscribe}
+      disabled={isSubmitting}
+      style={{
+        width: '100%',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        background: isSubmitting ? '#222' : '#000',
+        color: '#fff',
+        fontWeight: 'bold',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        border: 'none',
+        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.2s',
+        outline: 'none',
+      }}
+      onMouseOver={e => {
+        if (!isSubmitting) (e.currentTarget.style.background = '#222');
+      }}
+      onMouseOut={e => {
+        if (!isSubmitting) (e.currentTarget.style.background = '#000');
+      }}
+    >
+      {isSubmitting && (
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            marginRight: 8,
+            border: '2px solid #fff',
+            borderTop: '2px solid #888',
+            borderRadius: '50%',
+            display: 'inline-block',
+            animation: 'spin 1s linear infinite',
+          }}
+        />
+      )}
+      <span style={{ textAlign: 'center' }}>
+        {isSubmitting ? 'Submitting...' : 'Subscribe'}
+      </span>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+          }
+        `}
+      </style>
+    </button>
+  );
 }

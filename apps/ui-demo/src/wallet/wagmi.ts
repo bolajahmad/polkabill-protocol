@@ -7,7 +7,7 @@ import {
   injected,
   webSocket,
 } from "wagmi";
-import { base, baseSepolia, mainnet, polygon, polygonAmoy, sepolia } from "wagmi/chains";
+import { baseSepolia, polygonAmoy, sepolia } from "wagmi/chains";
 
 // Your custom chains
 export const passetHub = {
@@ -22,20 +22,6 @@ export const passetHub = {
   },
 } as const;
 
-export const assetHub = {
-  id: 420_420_419,
-  name: "AssetHub",
-  network: "Polkadot Asset Hub",
-  nativeCurrency: { decimals: 10, name: "DOT", symbol: "DOT" },
-  rpcUrls: {
-    default: { http: ["https://eth-rpc.polkadot.io/"] },
-    public: { http: ["https://asset-hub-eth-rpc.polkadot.io"] },
-  },
-  blockExplorers: {
-    default: { name: "Subscan", url: "https://assethub-polkadot.subscan.io" },
-  },
-} as const;
-
 // WAGMI config with multi-RPC fallbacks
 export function getConfig() {
   return createConfig({
@@ -43,17 +29,14 @@ export function getConfig() {
     ssr: true,
     connectors: [injected()], // MetaMask, etc.
     chains: [
+      sepolia,
+      polygonAmoy,
       baseSepolia,
       passetHub,
-      assetHub,
-      sepolia,
-      mainnet,
-      base,
-      polygon,
-      polygonAmoy,
     ],
     // Multi-RPC fallback transports
     transports: {
+      [sepolia.id]: http(),
       [baseSepolia.id]: fallback([
         http("https://base-sepolia.g.alchemy.com/v2/FPg_srMCXrb0pwXZnO6_J"),
         http("https://rpc.sepolia.org"),
@@ -64,14 +47,6 @@ export function getConfig() {
         webSocket("wss://services.polkadothub-rpc.com/testnet"),
         http("https://services.polkadothub-rpc.com/testnet"),
       ]),
-      [assetHub.id]: fallback([
-        http("https://asset-hub-eth-rpc.polkadot.io"),
-        http("https://eth-rpc.polkadot.io/"),
-      ]),
-      [sepolia.id]: http(),
-      [mainnet.id]: http(),
-      [base.id]: http(),
-      [polygon.id]: http(),
       [polygonAmoy.id]: http(),
     },
   });
