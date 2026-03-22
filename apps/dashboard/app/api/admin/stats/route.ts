@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     .filter((charge: any) => charge.success)
     .reduce((acc: number, charge: any) => {
       return BigInt(acc) + BigInt(charge.amount ?? 0);
-    }, 0);
+    }, 0n);
   const fees = revenue * 5n / 100n; // Assuming a 5% fee
   const merchantCount = merchantsData.merchants.length;
 

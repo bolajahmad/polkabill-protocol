@@ -397,7 +397,7 @@ export const UserExploreSubscriptionsView = ({ adapters }: Props) => {
                           {metadata?.title ?? ''}
                         </h3>
                         <ul className="flex items-center">
-                          {metadata.industry.split(',').map(tag => (
+                          {metadata.industry?.split(',').map(tag => (
                             <li key={tag}>
                               <Badge variant="default" className="text-[10px] capitalize">
                                 {tag.trim()}

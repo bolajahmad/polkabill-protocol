@@ -20,6 +20,12 @@ const config: HardhatUserConfig = {
     enabled: true,
   },
   networks: {
+    polkadotTestnet: {
+      url: 'https://services.polkadothub-rpc.com/testnet',
+      // url: 'https://eth-rpc-testnet.polkadot.io/',
+      chainId: 420420417,
+      accounts: [vars.get('PRIVATE_KEY')],
+    },
     baseSepolia: {
       chainId: 84532,
       url: 'https://base-sepolia.gateway.tenderly.co',
@@ -39,15 +45,26 @@ const config: HardhatUserConfig = {
       chainId: 97,
       url: 'wss://bsc-testnet-rpc.publicnode.com',
       accounts: [vars.get('PRIVATE_KEY')],
-    }
+    },
   },
   etherscan: {
     apiKey: {
+      polkadotTestnet: vars.get('SUBSCAN_API_KEY'),
       baseSepolia: vars.get('ETHERSCAN_API_KEY'),
       sepolia: vars.get('ETHERSCAN_API_KEY'),
       polygonAmoy: vars.get('ETHERSCAN_API_KEY'),
       bscTestnet: vars.get('ETHERSCAN_API_KEY'),
-    }
+    },
+    customChains: [
+      {
+        network: 'polkadotTestnet',
+        chainId: 420420417,
+        urls: {
+          apiURL: 'https://assethub-paseo.api.subscan.io/api/scan/evm/contract/verifysource',
+          browserURL: 'https://assethub-paseo.subscan.io',
+        },
+      },
+    ],
   },
 };
 

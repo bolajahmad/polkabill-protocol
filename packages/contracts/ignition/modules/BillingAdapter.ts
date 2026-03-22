@@ -7,9 +7,9 @@ const BillingAdapterModule = buildModule("BillingAdapterMod", (m) => {
   const billingAdapter = m.contract("BillingAdapter", []);
 
   // Call Initialize
-  const host = "0x9a2840D050e64Db89c90Ac5857536E4ec66641DE";
-  const hub = "0x1fabb39966D694cE09095724B12BDd8c42aD8808";
-  const feeToken = "0x693b854d6965ffeaae21c74049dea644b56fcacb";
+  const host = "0xD198c01839dd4843918617AfD1e4DDf44Cc3BB4a";
+  const hub = "0xf5B0d7c1fA5F7DC12796D919B48faCCb325e9B07";
+  const feeToken = "0xA801da100bF16D07F668F4A49E1f71fc54D05177";
 
   m.call(billingAdapter, "initialize", [
     host,
