@@ -13,7 +13,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { BASE_CHAIN, SubscriptionManagerContractAddress } from '@/lib/contracts';
 import { SubscriptionManagerContractABI } from '@/lib/contracts/abi/subscription-manager.abi';
 import { IAdapterWithBalance } from '@/lib/hooks/use-user-adapter-balance';
-import { ISubscription } from '@/lib/models/subscriptions';
+import { ISubscription, SubscriptionStatus } from '@/lib/models/subscriptions';
 import {
   cn,
   formatCurrency,
@@ -23,12 +23,15 @@ import {
   truncateAddress,
 } from '@/lib/utils';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { Clock, Globe, Info, ShieldCheck, Zap } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { erc20Abi, formatUnits, hexToString, parseUnits } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import { useChains, useConnection, useSwitchChain, useWriteContract } from 'wagmi';
+dayjs.extend(relativeTime);
 
 type Props = {
   subscriptions: ISubscription[];
@@ -60,7 +63,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
     },
   });
 
-  const handleManage = (sub: any) => {
+  const handleManage = (sub: ISubscription) => {
     setSelectedSub(sub);
     setIsModalOpen(true);
   };
@@ -80,7 +83,6 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
     return { adapter, token };
   }, [paymentChain, adapters, paymentToken]);
 
-  console.log({ chain });
   const payForSubscription = () => {
     if (!selectedSub || !adapter || !token) return;
 
@@ -114,15 +116,20 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
       switchChain({ chainId: BASE_CHAIN.id });
     }
 
-    writeContract({
-      abi: SubscriptionManagerContractABI,
-      address: SubscriptionManagerContractAddress,
-      functionName: 'cancel',
-      args: [BigInt(selectedSub?.id || 0)],
-      chainId: BASE_CHAIN.id,
-    });
+    writeContract(
+      {
+        abi: SubscriptionManagerContractABI,
+        address: SubscriptionManagerContractAddress,
+        functionName: 'cancel',
+        args: [BigInt(selectedSub?.id || 0)],
+        chainId: BASE_CHAIN.id,
+      },
+      {
+        onSuccess: () => toast.success('Subscription cancelled successfully'),
+      },
+    );
   };
-
+  console.log({ subscriptions });
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -135,6 +142,13 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
           const metadata = parseJsonOrUndefined(
             hexToString(sub.plan.metadataUri as `0x${string}`),
           ) as Record<string, string>;
+          const nextBilling = sub.nextBillingTime - (sub.plan.merchant?.billingWindow || 0);
+          const status =
+            nextBilling * 1000 - Date.now() > 0
+              ? sub.status
+              : canBillUser(sub)
+                ? SubscriptionStatus.PAST_DUE
+                : SubscriptionStatus.CANCELLED;
 
           return (
             <Card key={sub.id} className="group hover:border-black/10 transition-all">
@@ -151,7 +165,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       </p>
                     </div>
                   </div>
-                  <Badge variant="success">{sub.status}</Badge>
+                  <Badge variant="success">{status}</Badge>
                 </div>
 
                 <div className="space-y-4">
@@ -173,12 +187,18 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                       </p>
                       <p className="text-sm font-bold flex items-center gap-1 justify-end">
                         <Clock size={12} className="text-neutral-400" />
-                        {sub.nextBillingTime
-                          ? new Date(Math.floor(sub.nextBillingTime)).toLocaleDateString()
-                          : 'N/A'}{' '}
-                        {sub.nextBillingTime
-                          ? new Date(Math.floor(sub.nextBillingTime)).toLocaleTimeString()
-                          : 'N/A'}
+                        {nextBilling * 1000 - Date.now() > 10 * 60000 ? (
+                          <span>
+                            {nextBilling
+                              ? new Date(nextBilling * 1000).toLocaleDateString()
+                              : 'N/A'}{' '}
+                            {nextBilling
+                              ? new Date(nextBilling * 1000).toLocaleTimeString()
+                              : 'N/A'}
+                          </span>
+                        ) : (
+                          <span>{dayjs().to(dayjs(nextBilling * 1000), true)}</span>
+                        )}
                       </p>
                     </div>
                   </div>

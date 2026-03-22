@@ -1,7 +1,7 @@
-import { BigIntColumn as BigIntColumn_, Column as Column_, DateTimeColumn as DateTimeColumn_, Entity as Entity_, Index as Index_, IntColumn as IntColumn_, ManyToOne as ManyToOne_, OneToMany as OneToMany_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_ } from "@subsquid/typeorm-store"
-import { Status } from "./_status"
-import { Merchant } from "./merchant.model"
-import { Subscription } from "./subscription.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, StringColumn as StringColumn_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Merchant} from "./merchant.model"
+import {Status} from "./_status"
+import {Subscription} from "./subscription.model"
 
 @Entity_()
 export class Plan {
@@ -19,7 +19,7 @@ export class Plan {
     @BigIntColumn_({nullable: false})
     price!: bigint
 
-    @IntColumn_({ name: "billing_interval", nullable: false})
+    @IntColumn_({nullable: false})
     billingInterval!: number
 
     @IntColumn_({nullable: false})
@@ -28,15 +28,15 @@ export class Plan {
     @Column_("varchar", {length: 8, nullable: false})
     status!: Status
 
-    @StringColumn_({ name: "metadata_uri", nullable: false})
+    @StringColumn_({nullable: false})
     metadataUri!: string
 
     @OneToMany_(() => Subscription, e => e.plan)
     subscriptions!: Subscription[]
 
-    @DateTimeColumn_({ name: "created_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 
-    @DateTimeColumn_({ name: "updated_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     updatedAt!: Date
 }

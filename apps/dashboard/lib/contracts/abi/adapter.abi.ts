@@ -232,6 +232,24 @@ export const BillingAdapterContractABI = [
     type: 'function',
   },
   {
+    inputs: [
+      {
+        internalType: 'uint8',
+        name: '_type',
+        type: 'uint8',
+      },
+      {
+        internalType: 'bytes',
+        name: 'params',
+        type: 'bytes',
+      },
+    ],
+    name: 'executeFromHub',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'feeToken',
     outputs: [
@@ -247,6 +265,19 @@ export const BillingAdapterContractABI = [
   {
     inputs: [],
     name: 'host',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'hub',
     outputs: [
       {
         internalType: 'address',

@@ -41,7 +41,7 @@ export const RegisterMerchantPayoutAddress = ({ mid, onComplete, onCancel }: Pro
     resolver: zodResolver(createAdapterSchemaLooseChain),
     defaultValues: {
       chainId: '',
-      adapter: '',
+      adapter: mid,
     },
   });
   const { mutate: registerPayout, isPending } = useWriteContract({

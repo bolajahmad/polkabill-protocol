@@ -1,9 +1,9 @@
 "use client";
 
 import { truncateAddress } from "@/lib/utils";
-import { Badge } from "../ui/badge";
+import { erc20Abi } from "viem";
 import { useReadContract } from "wagmi";
-import { ERC20ContractABI } from "@/lib/contracts/abi/erc20.abi";
+import { Badge } from "../ui/badge";
 import { Spinner } from "../ui/spinner";
 
 type Props = {
@@ -13,7 +13,7 @@ type Props = {
 
 export const TokenDisplayBadge = ({ chainId, address }: Props) => {
     const {data: symbol, isLoading} = useReadContract({
-        abi: ERC20ContractABI,
+        abi: erc20Abi,
         chainId: chainId as any,
         address,
         functionName: "symbol",

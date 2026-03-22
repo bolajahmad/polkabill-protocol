@@ -1,6 +1,6 @@
-import { Column as Column_, DateTimeColumn as DateTimeColumn_, Entity as Entity_, Index as Index_, OneToMany as OneToMany_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_ } from "@subsquid/typeorm-store"
-import { Status } from "./_status"
-import { Charge } from "./charge.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Status} from "./_status"
+import {Charge} from "./charge.model"
 
 @Entity_()
 export class Adapter {
@@ -24,9 +24,9 @@ export class Adapter {
     @OneToMany_(() => Charge, e => e.adapter)
     charges!: Charge[]
 
-    @DateTimeColumn_({ name: "created_at", nullable: false})
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 
-    @DateTimeColumn_({ name: "updated_at", nullable: false})
+    @DateTimeColumn_({nullable: false})
     updatedAt!: Date
 }

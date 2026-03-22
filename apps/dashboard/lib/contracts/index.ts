@@ -1,9 +1,9 @@
-import { passetHub } from '../wallet/config';
+import { sepolia } from 'viem/chains';
 
-export const MerchantContractAddress = '0x6D73534191353E714F607D6b3C08425987131C19';
-export const ChainRegistryContractAddress = '0xbBa26e6278D6eD710f881633E780A9C3b23a3BAb';
-export const PlanRegistryContractAddress = '0x1d8C64CA9E08AbF56b832edC9606c4Eec7889059';
-export const SubscriptionManagerContractAddress = '0xc1c8c9b92AB6083609E29193929852883c66D32a';
-export const SubscriptionControllerContractAddress = '0x75704c73bdD5Ce0dd843ea4AAa375099c133E669';
+export const MerchantContractAddress = '0xbF35A9083c86b6F7c1b3CA441e05CDFf11a1d4f1';
+export const ChainRegistryContractAddress = '0xb0f7C69ed9F4910ce38cAbD1f03827C0943076c1';
+export const PlanRegistryContractAddress = '0xF2073fFa1B5E64118B93810cB134f6B47792A879';
+export const SubscriptionManagerContractAddress = '0x7AFa0299E063333453a6d8cac6045a09a4F26505';
+export const SubscriptionControllerContractAddress = '0x1fabb39966D694cE09095724B12BDd8c42aD8808';
 
-export const BASE_CHAIN = passetHub;
+export const BASE_CHAIN = sepolia;

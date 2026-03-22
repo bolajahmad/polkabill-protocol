@@ -2,9 +2,9 @@ import { Log } from '@subsquid/evm-processor';
 import * as chainRegAbi from '../abi/chain-registry';
 import * as merchantRegAbi from '../abi/merchant-registry';
 import * as planRegAbi from '../abi/plan-registry';
+import * as subControllerAbi from "../abi/subscriptions-controller";
 import * as subManagerAbi from '../abi/subscriptions-manager';
-import { merchantPayoutId } from './helpers';
-// import * as subControllerAbi from "./abi/subscriptions-controller";
+import { chargeId, decodeChargeRequestParams, merchantPayoutId } from './helpers';
 
 export interface CollectedIds {
   merchants: Set<string>;
@@ -12,6 +12,8 @@ export interface CollectedIds {
   subscriptions: Set<string>;
   adapters: Set<bigint>;
   payouts: Set<string>;
+  charges: Set<string>;
+  users: Set<string>;
 }
 
 export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
@@ -20,6 +22,8 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
   const subscriptions = new Set<string>();
   const adapters = new Set<bigint>();
   const payouts = new Set<string>();
+  const charges = new Set<string>();
+  const users = new Set<string>();
 
   for (const block of blocks) {
     for (const log of block.logs) {
@@ -79,9 +83,12 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
           break;
         }
         case subManagerAbi.events.Subscribed.topic: {
-          const { planId, subId } = subManagerAbi.events.Subscribed.decode(log);
+          const { planId, subId, subscriber } = subManagerAbi.events.Subscribed.decode(log);
           plans.add(planId);
           subscriptions.add(subId.toString());
+          if (subscriber) {
+            users.add(subscriber.toLowerCase());
+          }
           break;
         }
         case subManagerAbi.events.SubscriptionUpdated.topic: {
@@ -105,6 +112,26 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
           subscriptions.add(subId.toString());
           break;
         }
+        case subControllerAbi.events.ChargeRequestRelayed.topic: {
+          const { body, chainId } = subControllerAbi.events.ChargeRequestRelayed.decode(log);
+          const { subId, subscriber, cycle } = decodeChargeRequestParams(body as `0x${string}`);
+          const id = chargeId(subId.toString(), cycle);
+          charges.add(id);
+          subscriptions.add(subId.toString());
+          adapters.add(chainId);
+          if (subscriber) {
+            subscriptions.add(subId.toString());
+          }
+          break;
+        }
+        case subControllerAbi.events.ChargeConfirmed.topic: {
+          const { billingCycle, chainId, subscriptionId } = subControllerAbi.events.ChargeConfirmed.decode(log);
+          const id = chargeId(subscriptionId.toString(), billingCycle);
+          subscriptions.add(subscriptionId.toString());
+          adapters.add(chainId);
+          charges.add(id);
+          break;
+        }
         default: {
           break;
         }
@@ -118,5 +145,7 @@ export function collectIds(blocks: { logs: Log[] }[]): CollectedIds {
     subscriptions,
     adapters,
     payouts,
+    users,
+    charges
   };
 }

@@ -20,6 +20,7 @@ export function makeProcessor(
 
   return (
     new EvmBatchProcessor()
+    .setGateway(config.gateway)
       .setRpcEndpoint({
         url: config.rpcEndpoint,
         rateLimit: 5,

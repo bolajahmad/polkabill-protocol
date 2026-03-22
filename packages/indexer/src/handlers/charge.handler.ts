@@ -1,8 +1,8 @@
-import { EntityManager } from "../utils/entity-manager";
+import { encodePacked, keccak256 } from "viem";
 import * as subControllerAbi from "../abi/subscriptions-controller";
 import { Charge } from "../model";
+import { EntityManager } from "../utils/entity-manager";
 import { decodeChargeRequestParams } from "../utils/helpers";
-import { encodePacked, keccak256 } from "viem";
 
 export function handleChargeRequestRelayed(log: any, em: EntityManager) {
   const { body, chainId } =
@@ -13,7 +13,10 @@ export function handleChargeRequestRelayed(log: any, em: EntityManager) {
   if (!adapterEntity) return;
 
   const decodedParams = decodeChargeRequestParams(body as `0x${string}`);
-  if (!decodedParams) return;
+  if (!decodedParams) {
+    console.log("No decoded params");
+    return;
+  }
 
   const { subId, price, token, cycle, payout } = decodedParams;
 

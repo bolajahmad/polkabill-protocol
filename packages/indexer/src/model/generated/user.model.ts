@@ -1,5 +1,5 @@
-import { DateTimeColumn as DateTimeColumn_, Entity as Entity_, OneToMany as OneToMany_, PrimaryColumn as PrimaryColumn_ } from "@subsquid/typeorm-store"
-import { Subscription } from "./subscription.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Subscription} from "./subscription.model"
 
 @Entity_()
 export class User {
@@ -13,9 +13,9 @@ export class User {
     @OneToMany_(() => Subscription, e => e.user)
     subscriptions!: Subscription[]
 
-    @DateTimeColumn_({ name: "created_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 
-    @DateTimeColumn_({ name: "updated_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     updatedAt!: Date
 }

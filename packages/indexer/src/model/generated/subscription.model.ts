@@ -1,9 +1,9 @@
-import { BigIntColumn as BigIntColumn_, Column as Column_, DateTimeColumn as DateTimeColumn_, Entity as Entity_, Index as Index_, ManyToOne as ManyToOne_, OneToMany as OneToMany_, PrimaryColumn as PrimaryColumn_ } from "@subsquid/typeorm-store"
-import { SubscriptionStatus } from "./_subscriptionStatus"
-import { Charge } from "./charge.model"
-import { Merchant } from "./merchant.model"
-import { Plan } from "./plan.model"
-import { User } from "./user.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, OneToMany as OneToMany_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {User} from "./user.model"
+import {Merchant} from "./merchant.model"
+import {Plan} from "./plan.model"
+import {SubscriptionStatus} from "./_subscriptionStatus"
+import {Charge} from "./charge.model"
 
 @Entity_()
 export class Subscription {
@@ -27,30 +27,30 @@ export class Subscription {
     plan!: Plan
 
     @Index_()
-    @ManyToOne_(() => Plan, { nullable: true})
+    @ManyToOne_(() => Plan, {nullable: true})
     pendingPlan!: Plan | undefined | null
 
     @Column_("varchar", {length: 9, nullable: false})
     status!: SubscriptionStatus
 
-    @BigIntColumn_({ name: "start_time", nullable: false})
+    @BigIntColumn_({nullable: false})
     startTime!: bigint
 
-    @BigIntColumn_({ name: "next_billing_time", nullable: false})
+    @BigIntColumn_({nullable: false})
     nextBillingTime!: bigint
 
-    @BigIntColumn_({ name: "billing_cycle", nullable: false})
+    @BigIntColumn_({nullable: false})
     billingCycle!: bigint
 
-    @BigIntColumn_({ name: "cancelled_at", nullable: true})
+    @BigIntColumn_({nullable: true})
     cancelledAt!: bigint | undefined | null
 
     @OneToMany_(() => Charge, e => e.subscription)
     charges!: Charge[]
 
-    @DateTimeColumn_({ name: "created_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 
-    @DateTimeColumn_({ name: "updated_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     updatedAt!: Date
 }

@@ -32,6 +32,7 @@ export const functions = {
     'quoteNative((bytes,bytes,bytes,uint64,uint256,address))': viewFun("0x4f3f7c05", "quoteNative((bytes,bytes,bytes,uint64,uint256,address))", {"request": p.struct({"dest": p.bytes, "to": p.bytes, "body": p.bytes, "timeout": p.uint64, "fee": p.uint256, "payer": p.address})}, p.uint256),
     'quoteNative(((bytes,bytes,uint64,bytes,bytes,uint64,bytes),bytes,uint64,uint256,address))': viewFun("0x632e235a", "quoteNative(((bytes,bytes,uint64,bytes,bytes,uint64,bytes),bytes,uint64,uint256,address))", {"request": p.struct({"request": p.struct({"source": p.bytes, "dest": p.bytes, "nonce": p.uint64, "from": p.bytes, "to": p.bytes, "timeoutTimestamp": p.uint64, "body": p.bytes}), "response": p.bytes, "timeout": p.uint64, "fee": p.uint256, "payer": p.address})}, p.uint256),
     'quoteNative((bytes,uint64,bytes[],uint64,uint256,bytes))': viewFun("0xd24740fb", "quoteNative((bytes,uint64,bytes[],uint64,uint256,bytes))", {"request": p.struct({"dest": p.bytes, "height": p.uint64, "keys": p.array(p.bytes), "timeout": p.uint64, "fee": p.uint256, "context": p.bytes})}, p.uint256),
+    relayChargeConfirmation: fun("0x535036a0", "relayChargeConfirmation(uint8,bytes)", {"_type": p.uint8, "_params": p.bytes}, ),
     relayChargeRequest: fun("0x64e52788", "relayChargeRequest(uint256,address,bytes,bool)", {"_chain": p.uint256, "_adapter": p.address, "_body": p.bytes, "_native": p.bool}, ),
     relayMerchantProfileUpdate: fun("0x3d453da4", "relayMerchantProfileUpdate(uint256,address,bytes)", {"_chain": p.uint256, "_adapter": p.address, "_body": p.bytes}, ),
     relayTokenUpdate: fun("0x3a358484", "relayTokenUpdate(uint256,address,bool,bytes)", {"_chain": p.uint256, "_adapter": p.address, "_native": p.bool, "_body": p.bytes}, ),
@@ -170,6 +171,9 @@ export type QuoteNativeReturn_1 = FunctionReturn<typeof functions['quoteNative((
 
 export type QuoteNativeParams_2 = FunctionArguments<typeof functions['quoteNative((bytes,uint64,bytes[],uint64,uint256,bytes))']>
 export type QuoteNativeReturn_2 = FunctionReturn<typeof functions['quoteNative((bytes,uint64,bytes[],uint64,uint256,bytes))']>
+
+export type RelayChargeConfirmationParams = FunctionArguments<typeof functions.relayChargeConfirmation>
+export type RelayChargeConfirmationReturn = FunctionReturn<typeof functions.relayChargeConfirmation>
 
 export type RelayChargeRequestParams = FunctionArguments<typeof functions.relayChargeRequest>
 export type RelayChargeRequestReturn = FunctionReturn<typeof functions.relayChargeRequest>

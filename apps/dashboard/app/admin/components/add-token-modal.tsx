@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ChainRegistryContractAddress } from "@/lib/contracts";
+import { BASE_CHAIN, ChainRegistryContractAddress } from "@/lib/contracts";
 import { ChainRegistryContractABI } from "@/lib/contracts/abi/chain-registry.abi";
 import { handleContractError } from "@/lib/utils";
 import { queryClient } from "@/lib/wallet/config";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 type Props = {
   chainId: number;
@@ -18,6 +18,8 @@ type Props = {
 export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
   const [token, setToken] = useState("");
   const publicClient = usePublicClient();
+  const { chain } = useConnection();
+  const { mutate: switchChain } = useSwitchChain();
 
   const {
     mutate: updateAdapterTokens,
@@ -39,6 +41,19 @@ export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
   });
 
   const validToken = /^0x[a-fA-F0-9]{40}$/.test(token);
+
+  const updateAdapterToken = () => {
+      if (chain?.id !== BASE_CHAIN.id) {
+        switchChain({ chainId: BASE_CHAIN.id });
+      }
+    updateAdapterTokens({
+      abi: ChainRegistryContractABI,
+      address: ChainRegistryContractAddress,
+      functionName: 'setTokenSupport',
+      args: [BigInt(chainId), token as `0x${string}`, true],
+      chainId: BASE_CHAIN.id,
+    });
+  };
 
   return (
     <div>
@@ -74,14 +89,7 @@ export const UpdateTokenModal = ({ chainId, onComplete }: Props) => {
 
       <div className="w-full">
         <Button
-          onClick={() =>
-            updateAdapterTokens({
-              abi: ChainRegistryContractABI,
-              address: ChainRegistryContractAddress,
-              functionName: "setTokenSupport",
-              args: [BigInt(chainId), token as `0x${string}`, true],
-            })
-          }
+          onClick={() => updateAdapterToken()}
           className="w-full mt-6"
           disabled={isPending || !validToken}
         >

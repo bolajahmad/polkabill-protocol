@@ -1,6 +1,6 @@
-import { BigIntColumn as BigIntColumn_, BooleanColumn as BooleanColumn_, DateTimeColumn as DateTimeColumn_, Entity as Entity_, Index as Index_, IntColumn as IntColumn_, ManyToOne as ManyToOne_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_ } from "@subsquid/typeorm-store"
-import { Adapter } from "./adapter.model"
-import { Subscription } from "./subscription.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, StringColumn as StringColumn_, BooleanColumn as BooleanColumn_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Subscription} from "./subscription.model"
+import {Adapter} from "./adapter.model"
 
 @Entity_()
 export class Charge {
@@ -22,7 +22,7 @@ export class Charge {
     @BigIntColumn_({nullable: false})
     amount!: bigint
 
-    @IntColumn_({ name: "chain_id", nullable: false})
+    @IntColumn_({nullable: false})
     chainId!: number
 
     @Index_()
@@ -30,22 +30,22 @@ export class Charge {
     token!: string
 
     @Index_()
-    @StringColumn_({ name: "payout_address", nullable: false})
+    @StringColumn_({nullable: false})
     payoutAddress!: string
 
     @BigIntColumn_({nullable: false})
     billingCycle!: bigint
 
     @Index_()
-    @StringColumn_({ name: "tx_hash", nullable: false})
+    @StringColumn_({nullable: false})
     txHash!: string
 
-    @BigIntColumn_({ name: "block_number", nullable: false})
+    @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
     @BooleanColumn_({nullable: false})
     success!: boolean
 
-    @DateTimeColumn_({ name: "created_at", nullable: false})
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 }

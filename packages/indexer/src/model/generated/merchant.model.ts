@@ -1,8 +1,8 @@
-import { Column as Column_, DateTimeColumn as DateTimeColumn_, Entity as Entity_, IntColumn as IntColumn_, OneToMany as OneToMany_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_ } from "@subsquid/typeorm-store"
-import { Status } from "./_status"
-import { Payout } from "./payout.model"
-import { Plan } from "./plan.model"
-import { Subscription } from "./subscription.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_, StringColumn as StringColumn_, IntColumn as IntColumn_, DateTimeColumn as DateTimeColumn_} from "@subsquid/typeorm-store"
+import {Payout} from "./payout.model"
+import {Status} from "./_status"
+import {Plan} from "./plan.model"
+import {Subscription} from "./subscription.model"
 
 @Entity_()
 export class Merchant {
@@ -16,13 +16,13 @@ export class Merchant {
     @OneToMany_(() => Payout, e => e.merchant)
     payout!: Payout[]
 
-    @StringColumn_({ name: "metadata_uri", nullable: false})
+    @StringColumn_({nullable: false})
     metadataUri!: string
 
     @Column_("varchar", {length: 8, nullable: false})
     status!: Status
 
-    @IntColumn_({ name: "billing_window", nullable: false})
+    @IntColumn_({nullable: false})
     billingWindow!: number
 
     @IntColumn_({nullable: false})
@@ -34,9 +34,9 @@ export class Merchant {
     @OneToMany_(() => Subscription, e => e.merchant)
     subscriptions!: Subscription[]
 
-    @DateTimeColumn_({ name: "created_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     createdAt!: Date
 
-    @DateTimeColumn_({ name: "updated_at", nullable: false })
+    @DateTimeColumn_({nullable: false})
     updatedAt!: Date
 }

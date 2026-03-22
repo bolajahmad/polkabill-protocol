@@ -266,6 +266,14 @@ export class EntityManager {
     return result;
   }
 
+  getChargesForSubscription(subId: string): Charge[] {
+    const result: Charge[] = [];
+    this.charges.forEach(({ entity }) => {
+      if (entity.subscription?.id === subId) result.push(entity);
+    });
+    return result;
+  }
+
   /** Update all subscriptions for a user */
   updateSubscriptionsForUser(userId: string, patch: Partial<Subscription>) {
     this.subscriptions.forEach(({ entity }) => {

@@ -1,5 +1,16 @@
+import { ISubscription } from "./subscriptions";
+
 export interface ICharge {
   id: string;
+  billingCycle: string;
+  amount: string;
+  success: boolean;
+  txHash: string;
+  blockNumber: string;
+  chainId: number;
+  subscription: ISubscription;
+  adapter: IAdapter;
+  createdAt: string
 }
 
 export enum Status {

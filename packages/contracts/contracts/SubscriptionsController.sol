@@ -14,6 +14,10 @@ import {IChainRegistry} from './interfaces/IChainRegistry.sol';
 import {ISubscriptionManager} from './interfaces/ISubscriptionManager.sol';
 import {IMerchantRegistry} from './interfaces/IMerchantRegistry.sol';
 
+interface IBillingAdapter {
+    function executeFromHub(uint8 _type, bytes calldata params) external;
+}
+
 contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
     address private immutable _host;
     IERC20 public immutable feeToken;
@@ -80,6 +84,23 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
         emit ChargeConfirmed(_chainid, _subid, _cycle);
     }
 
+    function relayChargeConfirmation(uint8 _type, bytes memory _params) external {
+        if (_type == 1) {
+            (uint256 _subid, uint256 _cycle, uint256 _chainid) = abi.decode(
+                _params,
+                (uint256, uint256, uint256)
+            );
+            require(chainRegistry.isValidAdapter(_chainid, msg.sender), 'UNREGISTERED_ADAPTER');
+
+            bytes32 chargeId = keccak256(abi.encode(_subid, _cycle));
+            require(!processedCharge[chargeId], 'CHARGE_ALREADY_PROCESSED');
+            processedCharge[chargeId] = true;
+            subManager.confirmCharge(_subid, _cycle);
+            emit ChargeConfirmed(_chainid, _subid, _cycle);
+            return;
+        }
+    }
+
     function onPostRequestTimeout(
         PostRequest memory request
     ) external override onlyHost nonReentrant {
@@ -100,16 +121,18 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
         }
 
         // Resend the timed-out message
-        try IDispatcher(_host).dispatch(
-            DispatchPost({
-                body: request.body,
-                dest: request.dest,
-                timeout: uint64(0),
-                to: request.to,
-                fee: 0,
-                payer: address(this)
-            })
-        ) {} catch {}
+        try
+            IDispatcher(_host).dispatch(
+                DispatchPost({
+                    body: request.body,
+                    dest: request.dest,
+                    timeout: uint64(0),
+                    to: request.to,
+                    fee: 0,
+                    payer: address(this)
+                })
+            )
+        {} catch {}
 
         emit DispatchTimeout(_type);
     }
@@ -121,22 +144,27 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
         bytes memory _body
     ) external {
         require(msg.sender == address(chainRegistry), 'Unauthorized call!');
-        bytes memory dest = _native ? StateMachine.polkadot(_chain) : StateMachine.evm(_chain);
-        DispatchPost memory post = DispatchPost({
-            body: abi.encode(0, _body),
-            dest: dest,
-            timeout: uint64(0),
-            to: abi.encodePacked(_adapter),
-            fee: 0,
-            payer: address(this)
-        });
-
-        try IDispatcher(_host).dispatch(post) {
-            bytes32 syncId = keccak256(_body);
-            tokenSyncs[syncId] = true;
+        if (_chain == block.chainid) {
             emit TokenUpdateRelayed(_chain, _adapter, _native);
-        } catch {
-            emit DispatchFailed(_chain, _adapter, 0);
+            IBillingAdapter(_adapter).executeFromHub(0, _body);
+        } else {
+            bytes memory dest = StateMachine.evm(_chain);
+            DispatchPost memory post = DispatchPost({
+                body: abi.encode(0, _body),
+                dest: dest,
+                timeout: uint64(0),
+                to: abi.encodePacked(_adapter),
+                fee: 0,
+                payer: address(this)
+            });
+
+            try IDispatcher(_host).dispatch(post) {
+                bytes32 syncId = keccak256(_body);
+                tokenSyncs[syncId] = true;
+                emit TokenUpdateRelayed(_chain, _adapter, _native);
+            } catch {
+                emit DispatchFailed(_chain, _adapter, 0);
+            }
         }
     }
 
@@ -147,6 +175,11 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
         bool _native
     ) external {
         require(msg.sender == address(subManager), 'Unauthorized call!');
+        if (_chain == block.chainid) {
+            emit ChargeRequestRelayed(_chain, _adapter, _body);
+            IBillingAdapter(_adapter).executeFromHub(1, _body);
+            return;
+        }
         bytes memory dest = _native ? StateMachine.polkadot(_chain) : StateMachine.evm(_chain);
         DispatchPost memory post = DispatchPost({
             body: abi.encode(1, _body),
@@ -170,6 +203,11 @@ contract SubscriptionsController is HyperApp, Ownable, ReentrancyGuard {
         bytes memory _body
     ) external {
         require(msg.sender == address(merchantRegistry), 'Unauthorized call!');
+        if (_chain == block.chainid) {
+            emit MerchantProfileUpdated(_chain, _adapter, _body);
+            IBillingAdapter(_adapter).executeFromHub(2, _body);
+            return;
+        }
         bytes memory dest = StateMachine.evm(_chain);
         DispatchPost memory post = DispatchPost({
             body: abi.encode(2, _body),
