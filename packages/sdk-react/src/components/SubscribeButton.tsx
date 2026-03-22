@@ -7,9 +7,10 @@ export type SubscribeProps = {
   planId: number;
   chainId?: number;
   token?: string;
+  onComplete?: () => void;
 };
 
-export function SubscribeButton({ planId, chainId, token }: SubscribeProps) {
+export function SubscribeButton({ planId, chainId, token, onComplete }: SubscribeProps) {
   const [isSubmitting, setSubmitting] = useState(false);
   const pb = usePolkabill();
   const { address } = useAccount();
@@ -29,6 +30,9 @@ export function SubscribeButton({ planId, chainId, token }: SubscribeProps) {
       token: token as Address,
     });
     setSubmitting(false);
+    if (onComplete) {
+      onComplete();
+    }
   }
 
   return (

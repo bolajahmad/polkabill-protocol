@@ -14,7 +14,7 @@ export const RootContext = ({ children }: { children: ReactNode }) => {
   } = useWalletClient({
     chainId: chain?.id,
   });
-console.log({ chain });
+  
   // Only create PolkabillClient when walletClient is ready
   const polkabill = useMemo(() => {
     if (!walletClient) return null; // not ready yet

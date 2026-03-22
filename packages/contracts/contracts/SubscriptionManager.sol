@@ -175,10 +175,7 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         uint256 window = sub.nextChargeAt > merchant.window
             ? sub.nextChargeAt - merchant.window
             : 0;
-        if (
-            block.timestamp >= window &&
-            block.timestamp <= sub.nextChargeAt + grace
-        ) {
+        if (block.timestamp >= window && block.timestamp <= sub.nextChargeAt + grace) {
             return true;
         } else {
             return false;
@@ -194,20 +191,20 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
     function isChargeAllowedMut(uint256 _subId) internal returns (bool) {
         Subscription storage sub = subscriptions[_subId];
         if (sub.planId == 0 || sub.status == Status.NULL || sub.subscriber == address(0)) {
-            revert SubscriptionMissing();
+            return false;
         }
 
         if (sub.status == Status.CANCELLED) {
-            revert SubscriptionCancelled();
+            return false;
         }
 
-        Plan memory plan = planReg.getPlan(sub.planId);
+        Plan memory plan = planReg.getPlan(sub.pendingPlan > 0 ? sub.pendingPlan : sub.planId);
         if (!plan.active) {
-            revert PlanNotActive();
+            return false;
         }
         Merchant memory merchant = merchantReg.getMerchant(plan.merchantId);
         if (!merchant.active) {
-            revert MerchantNotActive();
+            return false;
         }
 
         uint256 grace = plan.grace > 0 ? plan.grace : merchant.grace;
@@ -218,12 +215,11 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
             sub.status = Status.DUE;
         }
 
-        emit SubscriptionUpdated(_subId, sub.status, msg.sender);
-
         uint256 window = sub.nextChargeAt > merchant.window
             ? sub.nextChargeAt - merchant.window
-            : 0;
+            : sub.nextChargeAt;
 
+        emit SubscriptionUpdated(_subId, sub.status, msg.sender);
         if (block.timestamp >= window && block.timestamp <= sub.nextChargeAt + grace) {
             return true;
         } else {
@@ -244,23 +240,23 @@ contract SubscriptionManager is ISubscriptionManager, Ownable {
         }
         Subscription storage sub = subscriptions[_subId];
 
-        require(isChargeAllowedMut(_subId), 'CHARGE_NOT_ALLOWED');
-        require(sub.status != Status.CANCELLED, 'CANCELLED');
+        bool chargeAllowed = isChargeAllowedMut(_subId);
+        if (chargeAllowed && sub.status != Status.CANCELLED) {
+            Plan memory plan = planReg.getPlan(sub.pendingPlan > 0 ? sub.pendingPlan : sub.planId);
+            address payout = merchantReg.getPayoutAddress(plan.merchantId, _cid);
 
-        Plan memory plan = planReg.getPlan(sub.pendingPlan > 0 ? sub.pendingPlan : sub.planId);
-        address payout = merchantReg.getPayoutAddress(plan.merchantId, _cid);
-
-        // Compile the crosschain message
-        bytes memory body = abi.encode(
-            _subId,
-            plan.price,
-            sub.subscriber,
-            _token,
-            sub.billingCycle,
-            payout
-        );
-        // Ensure merchant is registered on the chain
-        controller.relayChargeRequest(_cid, adapter, body, false);
+            // Compile the crosschain message
+            bytes memory body = abi.encode(
+                _subId,
+                plan.price,
+                sub.subscriber,
+                _token,
+                sub.billingCycle,
+                payout
+            );
+            // Ensure merchant is registered on the chain
+            controller.relayChargeRequest(_cid, adapter, body, false);
+        }
     }
 
     function confirmCharge(uint256 _subId, uint256 _cycle) external onlyController {

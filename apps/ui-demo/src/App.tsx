@@ -1,8 +1,21 @@
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import { Dialog, DialogBackdrop, DialogPanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { SubscribeButton } from '@polkabill/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, CreditCard, ExternalLink, Loader2, ShieldCheck, Zap } from 'lucide-react';
-import { useState } from 'react';
+import {
+  CheckCircle2,
+  ChevronDown,
+  CreditCard,
+  ExternalLink,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  ShieldCheck,
+  Wallet,
+  Zap,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { erc20Abi, formatUnits, parseUnits, zeroAddress } from 'viem';
+import { injected, useConnect, useConnection, useDisconnect, useSwitchChain, useWriteContract } from 'wagmi';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
@@ -13,25 +26,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from './components/ui/select';
+import { useUserAdapterBalance } from './hooks/use-wallet-stables-balances';
 import { cn, formatCurrency, truncateAddress } from './utils';
 import { MOCK_PLANS, SUPPORTED_CHAINS } from './utils/mocks';
 
 export const App = () => {
-  // const { subscribe, approve, isSubscribing, isApproving, hasApproval } = usePolkaBillSDk();
+  const { mutate: connect } = useConnect();
+  const { mutate: disconnect } = useDisconnect();
+  const { mutate: switchChain } = useSwitchChain()
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [step, setStep] = useState<'select' | 'approve' | 'confirm' | 'success'>('select');
   const [selectedChain, setSelectedChain] = useState('');
   const [selectedToken, setSelectedToken] = useState('');
-  const [txHash, setTxHash] = useState('');
+  const { address, isConnected, chainId } = useConnection();
+  const {
+    mutate: writeApproveAllowance,
+    isError,
+    error,
+    isPending: isApproving,
+    data: txHash,
+  } = useWriteContract({
+    mutation: {
+      onSuccess: () => {
+        setStep('success');
+      },
+    },
+  });
+
+  const { adaptersWithBalance: adapters } = useUserAdapterBalance(address ?? zeroAddress);
 
   const handleSubscribeClick = async (plan: any) => {
     setSelectedPlan(plan);
     setStep('confirm'); // Start with confirmation of intent
   };
 
+  const { token, adapter } = useMemo(() => {
+    if (selectedChain) {
+      const adapter = adapters.find(({ id }) => id == Number(selectedChain));
+
+      const token = adapter?.tokens.find(({ address }) => address == selectedToken);
+
+      return {
+        adapter,
+        token,
+      };
+    } else {
+      return {
+        token: undefined,
+        adapter: undefined,
+      };
+    }
+  }, [adapters, selectedChain, selectedToken]);
+
+  const hasAllowance =
+    Number(formatUnits(BigInt(token?.allowance ?? 0n), token?.decimals || 18)) >=
+    Number(selectedPlan?.price || 0);
+  const hasBalance =
+    Number(formatUnits(BigInt(token?.balance ?? 0n), token?.decimals || 18)) >=
+    Number(selectedPlan?.price || 0);
+
   const handleApprove = async () => {
-    await approve();
-    setStep('success');
+    if (!adapter || !token) {
+      alert('Please select a Chain and Token address');
+    } else {
+      if (chainId !== adapter.id) {
+        switchChain({ chainId: adapter.id as any });
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      writeApproveAllowance({
+        abi: erc20Abi,
+        address: adapter.address as `0x${string}`,
+        functionName: 'approve',
+        args: [
+          adapter.address as `0x${string}`,
+          parseUnits(selectedPlan.price.toString(), token.decimals),
+        ],
+      });
+    }
   };
 
   return (
@@ -46,19 +117,73 @@ export const App = () => {
             <span className="font-bold text-lg tracking-tight">SaaSFlow</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-500">
-            <a href="#" className="hover:text-black transition-colors">
-              Features
-            </a>
-            <a href="#" className="text-black">
-              Pricing
-            </a>
-            <a href="#" className="hover:text-black transition-colors">
-              Docs
-            </a>
+            <span className="hover:text-black transition-colors">Features</span>
+            <span className="text-black">Pricing</span>
+            <span className="hover:text-black transition-colors">Docs</span>
           </nav>
-          <Button variant="outline" size="sm" className="rounded-xl">
-            Sign In
-          </Button>
+
+          <div className="flex items-center gap-2 pl-2 border-l border-neutral-100">
+            {isConnected ? (
+              <Menu as="div" className="relative">
+                {({ open }) => (
+                  <>
+                    <MenuButton className="gap-2 rounded-xl" as="div">
+                      <Button variant="secondary" size="sm">
+                        <Wallet size={14} />
+                        <span className="hidden sm:inline">{truncateAddress(address ?? '')}</span>
+                        <ChevronDown
+                          size={14}
+                          className={cn('transition-transform', open && 'rotate-180')}
+                        />
+                      </Button>
+                    </MenuButton>
+
+                    <MenuItems className="absolute top-full mt-2 right-0 w-48 bg-white border border-neutral-100 rounded-2xl shadow-xl p-2 z-100">
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={() => connect({ connector: injected() })}
+                            className={cn(
+                              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left font-medium',
+                              focus ? 'bg-neutral-50' : '',
+                            )}
+                          >
+                            <RefreshCw size={14} className="text-neutral-400" />
+                            Switch Wallet
+                          </button>
+                        )}
+                      </MenuItem>
+                      <div className="h-px bg-neutral-50 my-1" />
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={() => disconnect()}
+                            className={cn(
+                              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-600 text-sm transition-colors text-left font-medium',
+                              focus ? 'bg-rose-50' : '',
+                            )}
+                          >
+                            <LogOut size={14} />
+                            Disconnect
+                          </button>
+                        )}
+                      </MenuItem>
+                    </MenuItems>
+                  </>
+                )}
+              </Menu>
+            ) : (
+              <Button
+                onClick={() => connect({ connector: injected() })}
+                variant="default"
+                size="sm"
+                className="gap-2 rounded-xl"
+              >
+                <Wallet size={14} />
+                Connect Wallet
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -204,7 +329,7 @@ const MyComponent = () => {
                         <span className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
                           Frequency
                         </span>
-                        <span className="text-sm font-bold">Monthly</span>
+                        <span className="text-sm font-bold">1 hr</span>
                       </div>
                     </div>
                   </Card>
@@ -242,7 +367,10 @@ const MyComponent = () => {
                           <SelectValue placeholder="--- Select token ---" />
                         </SelectTrigger>
                         <SelectContent position="item-aligned">
-                          {(SUPPORTED_CHAINS.find(({ id }) => id.toString() == selectedChain)?.tokens || [])?.map(p => (
+                          {(
+                            SUPPORTED_CHAINS.find(({ id }) => id.toString() == selectedChain)
+                              ?.tokens || []
+                          )?.map(p => (
                             <SelectItem key={p} value={p.toString()}>
                               {truncateAddress(p)}
                             </SelectItem>
@@ -252,10 +380,52 @@ const MyComponent = () => {
                     </div>
                   </div>
 
+                  <div className="p-4 border border-neutral-100 rounded-2xl space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-neutral-500">Current Balance</span>
+                      <span
+                        className={cn('font-bold', hasBalance ? 'text-black' : 'text-rose-500')}
+                      >
+                        {formatCurrency(
+                          Number(formatUnits(BigInt(token?.balance || 0), token?.decimals || 18)),
+                        )}{' '}
+                        {token?.symbol}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-neutral-500">Current Allowance</span>
+                      <span
+                        className={cn(
+                          'font-bold',
+                          hasAllowance ? 'text-emerald-600' : 'text-amber-500',
+                        )}
+                      >
+                        {hasAllowance
+                          ? formatCurrency(
+                              Number(
+                                formatUnits(BigInt(token?.allowance || 0), token?.decimals || 18),
+                              ),
+                            )
+                          : '0'}{' '}
+                        {token?.symbol}
+                      </span>
+                    </div>
+                  </div>
+
                   <SubscribeButton
                     planId={Number(selectedPlan.id)}
                     chainId={Number(selectedChain)}
                     token={selectedToken}
+                    onComplete={() => {
+                      if (
+                        Number(formatUnits(BigInt(token?.allowance || 0), token?.decimals || 18)) <
+                        Number(selectedPlan?.price || 0)
+                      ) {
+                        setStep('approve');
+                      } else {
+                        setStep('success');
+                      }
+                    }}
                   />
                 </motion.div>
               )}
@@ -292,13 +462,19 @@ const MyComponent = () => {
                     </div>
                   </div>
 
+                  {isError ? (
+                    <div className="text-red-600 font-bold text-sm">
+                      {error.message || 'An error occurred while submitting the transaction.'}
+                    </div>
+                  ) : null}
+
                   <div className="flex flex-col gap-3 pt-4">
                     <Button
                       onClick={handleApprove}
                       // disabled={isApproving}
                       className="w-full py-6 rounded-2xl font-bold gap-2 bg-emerald-600 hover:bg-emerald-700"
                     >
-                      {false ? (
+                      {isApproving ? (
                         <>
                           <Loader2 size={18} className="animate-spin" />
                           Approving...
@@ -343,7 +519,7 @@ const MyComponent = () => {
                       Transaction Hash
                     </p>
                     <div className="flex items-center justify-center gap-2 text-xs font-mono text-neutral-600">
-                      {txHash.slice(0, 12)}...{txHash.slice(-10)}
+                      {txHash ? `${txHash.slice(0, 12)}...${txHash.slice(-10)}` : 'N/A'}
                       <ExternalLink size={12} className="text-neutral-400" />
                     </div>
                   </div>
@@ -380,19 +556,13 @@ const MyComponent = () => {
             <h5 className="font-bold text-sm">Product</h5>
             <ul className="space-y-2 text-sm text-neutral-500">
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  Features
-                </a>
+                <span className="hover:text-black transition-colors">Features</span>
               </li>
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  Pricing
-                </a>
+                <span className="hover:text-black transition-colors">Pricing</span>
               </li>
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  Security
-                </a>
+                <span className="hover:text-black transition-colors">Security</span>
               </li>
             </ul>
           </div>
@@ -400,19 +570,13 @@ const MyComponent = () => {
             <h5 className="font-bold text-sm">Company</h5>
             <ul className="space-y-2 text-sm text-neutral-500">
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  About
-                </a>
+                <span className="hover:text-black transition-colors">About</span>
               </li>
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  Blog
-                </a>
+                <span className="hover:text-black transition-colors">Blog</span>
               </li>
               <li>
-                <a href="#" className="hover:text-black transition-colors">
-                  Careers
-                </a>
+                <span className="hover:text-black transition-colors">Careers</span>
               </li>
             </ul>
           </div>
@@ -420,12 +584,8 @@ const MyComponent = () => {
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-neutral-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-neutral-400">
           <p>© 2024 SaaSFlow Inc. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-black transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-black transition-colors">
-              Terms of Service
-            </a>
+            <span className="hover:text-black transition-colors">Privacy Policy</span>
+            <span className="hover:text-black transition-colors">Terms of Service</span>
           </div>
         </div>
       </footer>

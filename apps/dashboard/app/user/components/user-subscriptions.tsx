@@ -241,7 +241,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                                <label htmlFor="chain" className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                   Select Chain
                                 </label>
                                 <Select
@@ -250,7 +250,7 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                                     setPaymentChain(value);
                                   }}
                                 >
-                                  <SelectTrigger className="w-full">
+                                  <SelectTrigger className="w-full" id="chain">
                                     <SelectValue placeholder="--- Select chain ---">
                                       {paymentChain?.split('/')[1]} ({paymentChain?.split('/')[0]})
                                     </SelectValue>
@@ -283,11 +283,12 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                                 </Select>
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                                <label htmlFor="token" className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                   Select Token
                                 </label>
                                 <Select
                                   value={paymentToken}
+                                  id="token"
                                   onValueChange={value => setPaymentToken(value)}
                                 >
                                   <SelectTrigger className="w-full">
@@ -423,13 +424,14 @@ export const UserSubscriptionsList = ({ subscriptions, userId, adapters }: Props
                               </p>
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-bold text-neutral-500 uppercase">
+                              <label htmlFor="allowance" className="text-xs font-bold text-neutral-500 uppercase">
                                 Update Allowance
                               </label>
                               <div className="flex gap-2">
                                 <Input
                                   type="number"
                                   value={newAllowance}
+                                  id="allowance"
                                   onChange={e => {
                                     if (paymentChain.length) {
                                       const cid = Number(paymentChain.split('/')[0]) as any;
