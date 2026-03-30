@@ -84,6 +84,7 @@ export const App = () => {
   const hasBalance =
     Number(formatUnits(BigInt(token?.balance ?? 0n), token?.decimals || 18)) >=
     Number(selectedPlan?.price || 0);
+    console.log({ token, adapter });
 
   const handleApprove = async () => {
     if (!adapter || !token) {

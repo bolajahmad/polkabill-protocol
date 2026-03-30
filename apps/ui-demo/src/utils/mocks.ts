@@ -1,13 +1,13 @@
 export const MOCK_PLANS = [
   {
-    id: '5',
+    id: '1',
     name: 'Basic Tier',
-    price: 6,
+    price: 2,
     features: ['Up to 5 projects', 'Basic analytics', 'Community support'],
     color: 'bg-blue-50 text-blue-600 border-blue-100',
   },
   {
-    id: '4',
+    id: '2',
     name: 'Premiun Tier',
     price: 4,
     features: ['Unlimited projects', 'Advanced analytics', 'Priority support', 'Custom domains'],
@@ -17,7 +17,7 @@ export const MOCK_PLANS = [
   {
     id: '3',
     name: 'Expert Tier',
-    price: 2,
+    price: 5,
     features: [
       'Custom solutions',
       'Dedicated account manager',
@@ -32,7 +32,7 @@ export const SUPPORTED_CHAINS = [
   {
     id: 11155111,
     name: 'Sepolia',
-    address: "0x9255d1ada23e5152bf9ca0079364a790731c1a38",
+    address: "0x3A8ce8DC1E700Ea16a31b731A575A650149960A9",
     tokens: [
       '0xA801da100bF16D07F668F4A49E1f71fc54D05177',
       '0xb2Ff79C688c71696d2B9c4b96908F40d15038691',
@@ -43,7 +43,7 @@ export const SUPPORTED_CHAINS = [
   {
     id: 84532,
     name: 'Base Sepolia',
-    address: "0xc292a198345a4949c8beb7d0bf6e25aee0b9d35e",
+    address: "0xc2701D03912fB4D29A0838dcCd32dF8E7172278a",
     icon: 'P',
     tokens: [
       '0xA801da100bF16D07F668F4A49E1f71fc54D05177',
